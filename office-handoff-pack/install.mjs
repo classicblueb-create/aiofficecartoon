@@ -12,6 +12,7 @@ if (!root || !existsSync(join(root, 'tools/lib/letter.js'))) { console.error('เน
 const cp = (from, to) => { mkdirSync(dirname(to), { recursive: true }); copyFileSync(join(here, from), to); };
 for (const f of ['Sarabun-Regular.ttf', 'Sarabun-Bold.ttf', 'OFL.txt']) cp(`fonts/${f}`, join(root, 'tools/fonts', f));
 cp('art/office.js', join(root, 'business/art/office.js'));
+cp('art/island.js', join(root, 'business/art/island.js'));
 cp('chart/office.mmd', join(root, 'business/office/layout.mmd'));
 mkdirSync(join(root, 'business/out'), { recursive: true });
 
