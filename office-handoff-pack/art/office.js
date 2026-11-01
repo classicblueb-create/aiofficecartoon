@@ -27,7 +27,7 @@ const CAST = [
 ];
 
 async function main() {
-  const L = await layOut(path.join(HERE, 'office/layout.mmd'), { face: 'Sarabun', svgOut: path.join(HERE, 'out/office-layout.svg') });
+  const L = await layOut(path.join(HERE, 'office/layout.mmd'), { face: 'Kevin Serif Bold', svgOut: path.join(HERE, 'out/office-layout.svg') });
   const P = plate({ id: 'office', w: 216, h: 216, ppm: FAST ? 5 : 10, seed: 'office-1', paper: 'hotpress' });
   const m = mapper(contentBox(L), { x: 8, y: 52, w: 200, h: 156 });
   saveShapes(path.join(HERE, 'out/office-pele.json'), L, m);
