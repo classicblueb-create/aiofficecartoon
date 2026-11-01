@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Reel pipeline · statechart</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600&family=Playfair+Display:ital,wght@1,500&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+  --paper:#F7F3EB; --ink:#171717; --muted:#5b574f;
+  --card:#FBE484; --card2:#F2DD9C; --pin:#F36B21; --accent:#C2410C;
+  --bad:#d4222f; --badbg:#ffe3e3; --ok:#2f7d4f; --line:#171717; --box:#fffdf8; --rule:#d9d2c3;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --paper:#171717; --ink:#F7F3EB; --muted:#b9b3a6;
+    --card:#4a4320; --card2:#3a3519; --pin:#F36B21; --accent:#F36B21;
+    --bad:#ff6b73; --badbg:#3b1e20; --ok:#7fd1a0; --line:#F7F3EB; --box:#211f1b; --rule:#3a372f;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --paper:#171717; --ink:#F7F3EB; --muted:#b9b3a6;
+  --card:#4a4320; --card2:#3a3519; --pin:#F36B21; --accent:#F36B21;
+  --bad:#ff6b73; --badbg:#3b1e20; --ok:#7fd1a0; --line:#F7F3EB; --box:#211f1b; --rule:#3a372f;
+}
+html{background:var(--paper)}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:'Kanit',system-ui,sans-serif;font-weight:400;line-height:1.55}
+main{max-width:520px;margin:0 auto;padding:28px 18px 56px}
+.kicker{font-family:'Playfair Display',Georgia,serif;font-style:italic;color:var(--accent);font-size:15px;margin:0}
+h1{font-weight:600;font-size:30px;line-height:1.2;margin:4px 0 10px}
+h2{font-weight:600;font-size:20px;margin:36px 0 2px}
+.sub{color:var(--muted);margin:0 0 10px;font-size:15px}
+p{margin:8px 0}
+.num{font-family:'Playfair Display',Georgia,serif;font-style:italic;color:var(--accent);margin-right:6px}
+svg{width:100%;height:auto;display:block;overflow:visible}
+svg text{font-family:'Kanit',system-ui,sans-serif;fill:var(--ink);paint-order:stroke;stroke:var(--paper);stroke-width:4px;stroke-linejoin:round}
+.stat{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}
+.stat div{flex:1 1 140px;background:var(--box);border:1.5px solid var(--rule);border-radius:12px;padding:10px 12px}
+.stat b{display:block;font-size:22px;font-weight:600}
+.stat span{font-size:13px;color:var(--muted)}
+.ok b{color:var(--ok)} .bad b{color:var(--bad)}
+ul.rules{padding-left:0;list-style:none;margin:10px 0}
+ul.rules li{padding:7px 0;border-bottom:1px dashed var(--rule);font-size:14.5px}
+code{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;background:var(--box);border:1px solid var(--rule);border-radius:5px;padding:1px 5px}
+.path{background:var(--badbg);border:1.5px solid var(--bad);border-radius:12px;padding:10px 14px;margin:12px 0}
+.path ol{margin:4px 0 0;padding-left:20px;font-size:14.5px}
+details{margin:14px 0;background:var(--box);border:1.5px solid var(--rule);border-radius:12px;padding:8px 12px}
+summary{cursor:pointer;font-weight:500}
+pre{overflow-x:auto;font-size:11.5px;line-height:1.45;margin:8px 0 2px}
+.foot{font-size:12.5px;color:var(--muted);margin-top:30px}
+.foot a{color:var(--accent)}
+</style>
+</head>
+<body>
+<main>
+<p class="kicker">statechart · checked by TLC</p>
+<h1>จากสคริปต์ถึงรีล<br>ไปตามเส้นด้ายแดง</h1>
+<p class="sub">โมเดล pipeline ของ reel-director เป็น TLA+ ให้ TLC ไล่ตรวจทุกสถานะ แล้ววาดเป็นลายเส้นด้วยโค้ด</p>
+
+<h2><span class="num">I</span>ทางที่ถูกต้อง</h2>
+<p class="sub">แต่ละสถานะคือตั๋วที่ปักหมุดไว้ ส่วนเส้นด้ายคือก้าวถัดไป</p>
+<svg id="flow" viewBox="0 0 440 680" role="img" aria-label="Statechart of the reel pipeline from intake to delivered, with a matte check for cutout, an optional Thai proofread step and a render-fix loop."></svg>
+
+<div class="stat">
+  <div class="ok"><b>69</b><span>สถานะที่ TLC ไล่ตรวจ (100 ก้าว)</span></div>
+  <div class="ok"><b>5/5</b><span>กฎผ่าน เมื่อมีด่านตรวจซับไทย</span></div>
+</div>
+
+<ul class="rules">
+  <li>ขอรูปจากผู้ใช้ก่อนเสมอ แล้วจึง build <code>AssetsAskedBeforeBuild</code></li>
+  <li>cutout build ได้เมื่อ matte ผ่านเท่านั้น <code>CutoutNeedsMatte</code></li>
+  <li>ส่งงานได้เมื่อ QA ไม่มี flag <code>DeliveredIsClean</code></li>
+  <li>ถ้ายังมี placeholder ต้องแจ้งผู้ใช้ <code>PlaceholdersDisclosed</code></li>
+  <li>ซับไทยต้องผ่านการตรวจก่อน build <code>ThaiProofreadBeforeBuild</code></li>
+</ul>
+
+<h2><span class="num">II</span>ช่องโหว่ที่ TLC เจอ</h2>
+<p class="sub">ในโมเดลที่เขียนตามตัวอักษรของ SKILL.md</p>
+<svg id="bug" viewBox="0 0 440 520" role="img" aria-label="The path TLC found: the plan is written and the reel built without the Thai proofread step, which breaks the rule."></svg>
+
+<div class="path">
+  <b>เส้นทางสั้นที่สุดที่ทำให้กฎพัง (5 ก้าว)</b>
+  <ol>
+    <li>เลือก format: split</li>
+    <li>ถอดเสียงเป็น word timestamps</li>
+    <li>เขียน scene plan ข้ามขั้นตรวจซับไปเลย</li>
+    <li>ขอรูปจากผู้ใช้</li>
+    <li>build โดยซับไทยยังไม่ถูกตรวจ</li>
+  </ol>
+</div>
+<p>SKILL.md เขียนว่า “always proofread the Thai text” แต่ขั้นตอนใน workflow ไม่ได้บังคับเป็นด่านก่อนเขียนแผน เลยเป็นแค่ขั้นที่ข้ามได้ ทางแก้คือใส่ด่านนี้ไว้ก่อน <code>WritePlan</code> พอแก้ในโมเดลแล้ว TLC ผ่านครบ</p>
+<p class="sub">ข้อควรรู้: นี่คือช่องว่างในข้อความของ skill ตามที่ผมโมเดล ไม่ได้บอกว่าตอนรันจริงจะพลาดเสมอ</p>
+
+<details>
+<summary>ดูโมเดล TLA+ (ย่อ)</summary>
+<pre>
+ChooseFormat   == intake -> format chosen
+Transcribe     == format chosen -> transcribed
+ProofreadThai  == transcribed, proofread = TRUE   \* ข้ามได้
+WritePlan      == transcribed -> planned
+                  /\ (GateProofread => proofread)
+AskForAssets   == planned -> assets requested
+Build          == assets requested -> built
+                  /\ format # "cutout" \/ matte = "ok"
+Render         == built -> rendered, flags in {0,1}
+FixFlags       == rendered /\ flags = 1 -> built
+Deliver        == rendered /\ flags = 0 -> delivered
+                  /\ disclosed' = (placeholders &gt; 0)
+</pre>
+</details>
+
+<p class="foot">สไตล์และ pipeline ได้แรงบันดาลใจจาก <a href="https://kevintngo.github.io/statechart-art/">statechart art</a> ของ Kevin T. Ngo (โค้ดที่นี่เขียนใหม่ทั้งหมด) · ตรวจด้วย <a href="https://github.com/tlaplus/tlaplus">TLC</a> · layout วางด้วยมือ ไม่ได้ใช้ pele</p>
+</main>
+
+<script>
+(function(){
+  var NS='http://www.w3.org/2000/svg';
+  function el(n,a,p){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e;}
+  var seed=7;function rnd(){seed=(seed*16807)%2147483647;return (seed-1)/2147483646;}
+  function defs(svg,id){
+    var d=el('defs',{},svg);
+    var f=el('filter',{id:'pen'+id,x:'-5%',y:'-5%',width:'110%',height:'110%'},d);
+    el('feTurbulence',{type:'fractalNoise',baseFrequency:'0.035',numOctaves:'2',seed:'3',result:'n'},f);
+    el('feDisplacementMap',{in:'SourceGraphic',in2:'n',scale:'2.6'},f);
+    var f2=el('filter',{id:'grain'+id,x:'0',y:'0',width:'100%',height:'100%'},d);
+    el('feTurbulence',{type:'fractalNoise',baseFrequency:'0.9',numOctaves:'1',seed:'5',result:'g'},f2);
+    el('feColorMatrix',{in:'g',type:'matrix',values:'0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.35 -0.08',result:'ga'},f2);
+    el('feComposite',{in:'SourceGraphic',in2:'ga',operator:'in'},f2);
+  }
+  function wob(x1,y1,x2,y2){
+    var mx=(x1+x2)/2+(rnd()-.5)*6,my=(y1+y2)/2+(rnd()-.5)*6;
+    return 'M'+x1+' '+y1+' Q'+mx+' '+my+' '+x2+' '+y2;
+  }
+  function arrow(g,x1,y1,x2,y2,col,w){
+    var a=Math.atan2(y2-y1,x2-x1),L=9;
+    [-0.5,0.5].forEach(function(s){
+      el('path',{d:'M'+x2+' '+y2+' L'+(x2-L*Math.cos(a+s))+' '+(y2-L*Math.sin(a+s)),stroke:col,'stroke-width':w,fill:'none','stroke-linecap':'round'},g);
+    });
+  }
+  function draw(svg,id,nodes,edges){
+    defs(svg,id);
+    var ink=el('g',{filter:'url(#pen'+id+')'},svg);
+    var byId={};nodes.forEach(function(n){byId[n.id]=n;});
+    edges.forEach(function(e){
+      var col=e.bad?'var(--bad)':'var(--line)';
+      var w=e.bad?3:1.8;
+      var p=el('path',{d:e.d||wob(e.x1,e.y1,e.x2,e.y2),stroke:col,'stroke-width':w,fill:'none','stroke-linecap':'round','stroke-dasharray':e.dash?'5 5':'none'},ink);
+      var ax=e.ax!=null?e.ax:e.x2, ay=e.ay!=null?e.ay:e.y2, bx=e.bx!=null?e.bx:e.x1, by=e.by!=null?e.by:e.y1;
+      arrow(ink,bx,by,ax,ay,col,w);
+    });
+    nodes.forEach(function(n){
+      var g=el('g',{transform:'rotate('+(n.rot||0)+' '+(n.x+n.w/2)+' '+(n.y+n.h/2)+')'},ink);
+      var fill=n.cls==='bad'?'var(--badbg)':(n.cls==='ghost'?'var(--box)':(n.cls==='side'?'var(--card2)':'var(--card)'));
+      var stroke=n.cls==='bad'?'var(--bad)':'var(--line)';
+      el('rect',{x:n.x,y:n.y,width:n.w,height:n.h,rx:6,fill:fill,stroke:stroke,'stroke-width':n.cls==='bad'?2.8:1.8,'stroke-dasharray':n.cls==='ghost'?'5 4':'none'},g);
+      // pencil hatch
+      if(n.cls!=='ghost'){
+        var hg=el('g',{filter:'url(#grain'+id+')',opacity:'.55'},g);
+        for(var i=0;i<n.h+n.w;i+=7){
+          var x1=n.x+Math.max(0,i-n.h),y1=n.y+Math.min(n.h,i);
+          var x2=n.x+Math.min(n.w,i),y2=n.y+Math.max(0,i-n.w);
+          el('line',{x1:x1,y1:y1,x2:x2,y2:y2,stroke:n.cls==='bad'?'var(--bad)':'var(--pin)','stroke-width':1.2,opacity:.35},hg);
+        }
+      }
+      el('circle',{cx:n.x+9,cy:n.y+9,r:4.5,fill:n.cls==='bad'?'var(--bad)':'var(--pin)',stroke:'var(--line)','stroke-width':1.2},g);
+    });
+    var txt=el('g',{},svg);
+    nodes.forEach(function(n){
+      var cx=n.x+n.w/2+(n.tx||0), cy=n.y+n.h/2;
+      var t=el('text',{x:cx,y:n.sub?cy-2:cy+5,'text-anchor':'middle','font-size':n.fs||15,'font-weight':500,transform:'rotate('+(n.rot||0)+' '+(n.x+n.w/2)+' '+(n.y+n.h/2)+')'},txt);
+      t.textContent=n.label;
+      if(n.sub){
+        var s=el('text',{x:cx,y:cy+13,'text-anchor':'middle','font-size':10.5,'font-weight':400,transform:'rotate('+(n.rot||0)+' '+(n.x+n.w/2)+' '+(n.y+n.h/2)+')',style:'fill:var(--muted)'},txt);
+        s.textContent=n.sub;
+      }
+    });
+    edges.forEach(function(e){
+      if(!e.label)return;
+      var t=el('text',{x:e.lx,y:e.ly,'font-size':11.5,'font-weight':e.bad?500:400,'text-anchor':e.anchor||'start',style:e.bad?'fill:var(--bad)':'fill:var(--accent)'},txt);
+      t.textContent=e.label;
+    });
+    return txt;
+  }
+
+  /* ---------- Plate I ---------- */
+  var flow=document.getElementById('flow');
+  var X=200,W=176,H=46,GAP=78,Y0=26,LX=X-W/2;
+  var names=[['intake',''],['format chosen',''],['transcribed',''],['planned',''],['assets requested','ขอรูปจากผู้ใช้แล้ว'],['built',''],['rendered','QA ตรวจแล้ว'],['delivered','ส่งไฟล์ MP4']];
+  var nodes=names.map(function(n,i){return {id:'s'+i,x:LX,y:Y0+i*GAP,w:W,h:H,label:n[0],sub:n[1],rot:(i%2?0.8:-0.8)};});
+  nodes.push({id:'proof',x:300,y:Y0+2*GAP+3,w:130,h:40,label:'proofread Thai',sub:'ข้ามได้ในโมเดลเดิม',cls:'ghost',fs:12.5,rot:1.4});
+  nodes.push({id:'matte',x:4,y:Y0+4*GAP+GAP/2-18,w:100,h:44,label:'matte (cutout)',sub:'ไม่ผ่าน→split',cls:'side',fs:13,rot:-1.4});
+  var labels=['เลือก split / cutout / essay','ถอดเสียง','เขียน scene plan','ขอรูป','build','render','ไม่มี flag'];
+  var edges=[];
+  for(var i=0;i<7;i++){
+    var y1=Y0+i*GAP+H, y2=Y0+(i+1)*GAP;
+    edges.push({x1:X,y1:y1,x2:X,y2:y2-2,label:labels[i],lx:X+10,ly:(y1+y2)/2+4});
+  }
+  edges.push({x1:LX+W,y1:Y0+2*GAP+23,x2:300,y2:Y0+2*GAP+23,dash:true});
+  // matte detour: assets -> matte -> built
+  var ay=Y0+4*GAP+H/2, by=Y0+5*GAP+H/2, my=Y0+4*GAP+GAP/2+4;
+  edges.push({d:'M'+LX+' '+ay+' Q 54 '+ay+' 54 '+(my-20),ax:54,ay:my-20,bx:LX,by:ay,dash:true});
+  edges.push({d:'M54 '+(my+26)+' Q 54 '+by+' '+(LX-2)+' '+by,ax:LX-2,ay:by,bx:54,by:my+26,dash:true});
+  // render-fix loop
+  var r1=Y0+6*GAP+H/2, b1=Y0+5*GAP+H/2;
+  edges.push({d:'M'+(LX+W)+' '+r1+' C 352 '+r1+' 352 '+b1+' '+(LX+W+2)+' '+b1,ax:LX+W+2,ay:b1,bx:LX+W,by:r1,label:'มี flag → แก้',lx:346,ly:(r1+b1)/2+4});
+  draw(flow,'a',nodes,edges);
+
+  /* ---------- Plate II ---------- */
+  var bug=document.getElementById('bug');
+  var names2=[['intake',''],['format chosen','split'],['transcribed','ถอดเสียงแล้ว'],['planned',''],['assets requested',''],['built','ซับไทยยังไม่ถูกตรวจ']];
+  var G2=78,Y2=22;
+  var n2=names2.map(function(n,i){return {id:'b'+i,x:LX,y:Y2+i*G2,w:W,h:H,label:n[0],sub:n[1],cls:i===5?'bad':'',rot:(i%2?0.8:-0.8)};});
+  n2.push({id:'bproof',x:300,y:Y2+2*G2+3,w:130,h:40,label:'proofread Thai',sub:'ไม่ได้ทำ',cls:'ghost',fs:12.5,rot:1.4});
+  var l2=['','ถอดเสียง','เขียน scene plan','ขอรูป','build'];
+  var e2=[];
+  for(var j=0;j<5;j++){
+    var y1b=Y2+j*G2+H, y2b=Y2+(j+1)*G2;
+    e2.push({x1:X,y1:y1b,x2:X,y2:y2b-2,bad:true,label:(j===0?'เลือก format':l2[j]),lx:X+10,ly:(y1b+y2b)/2+4});
+  }
+  // crossed-out proofread
+  e2.push({d:'M'+(LX+W)+' '+(Y2+2*G2+23)+' L 300 '+(Y2+2*G2+23),ax:300,ay:Y2+2*G2+23,bx:LX+W,by:Y2+2*G2+23,dash:true});
+  var t2=draw(bug,'b',n2,e2);
+  // cross over the skipped card
+  var cr=el('g',{filter:'url(#penb)'},bug);
+  el('path',{d:'M304 '+(Y2+2*G2+6)+' L 426 '+(Y2+2*G2+40),stroke:'var(--bad)','stroke-width':2.4,'stroke-linecap':'round'},cr);
+  el('path',{d:'M426 '+(Y2+2*G2+6)+' L 304 '+(Y2+2*G2+40),stroke:'var(--bad)','stroke-width':2.4,'stroke-linecap':'round'},cr);
+  // rule stamp
+  var sy=Y2+5*G2+H+34;
+  var stamp=el('g',{filter:'url(#penb)',transform:'rotate(-3 220 '+sy+')'},bug);
+  el('rect',{x:66,y:sy-24,width:308,height:44,rx:6,fill:'none',stroke:'var(--bad)','stroke-width':3},stamp);
+  var st=el('text',{x:220,y:sy+5,'text-anchor':'middle','font-size':17,'font-weight':600,style:'fill:var(--bad);stroke:none'},bug);
+  st.setAttribute('transform','rotate(-3 220 '+sy+')');
+  st.textContent='RULE BROKEN: ThaiProofreadBeforeBuild';
+  st.setAttribute('font-size','13.5');
+})();
+</script>
+</body>
+</html>

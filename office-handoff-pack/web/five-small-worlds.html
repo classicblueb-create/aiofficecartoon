@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ห้าโลกเล็กๆ · Five small worlds</title>
+<meta name="description" content="Five small worlds drawn in pen and coloured pencil, each one a statechart checked by TLC. Tap everything.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600&family=Playfair+Display:ital,wght@1,500&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+  --paper:#F7F3EB; --ink:#171717; --muted:#5b574f; --box:#fffdf8; --rule:#d9d2c3;
+  --pin:#F36B21; --accent:#C2410C; --line:#171717; --bad:#d4222f; --badbg:#ffe3e3; --ok:#2f7d4f;
+  --f1:#FBE484; --f2:#F7C9A6; --f3:#CDE7D2; --f4:#CCE2F3; --f5:#E0D5F0;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --paper:#171717; --ink:#F7F3EB; --muted:#b9b3a6; --box:#211f1b; --rule:#3a372f;
+    --pin:#F36B21; --accent:#F36B21; --line:#F7F3EB; --bad:#ff6b73; --badbg:#3b1e20; --ok:#7fd1a0;
+    --f1:#4a4320; --f2:#4d3322; --f3:#264233; --f4:#243b4d; --f5:#3b3150;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --paper:#171717; --ink:#F7F3EB; --muted:#b9b3a6; --box:#211f1b; --rule:#3a372f;
+  --pin:#F36B21; --accent:#F36B21; --line:#F7F3EB; --bad:#ff6b73; --badbg:#3b1e20; --ok:#7fd1a0;
+  --f1:#4a4320; --f2:#4d3322; --f3:#264233; --f4:#243b4d; --f5:#3b3150;
+}
+html{background:var(--paper)}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:'Kanit',system-ui,sans-serif;line-height:1.55;-webkit-tap-highlight-color:transparent}
+main{max-width:520px;margin:0 auto;padding:28px 16px 56px}
+.kicker{font-family:'Playfair Display',Georgia,serif;font-style:italic;color:var(--accent);font-size:15px;margin:0}
+h1{font-weight:600;font-size:32px;line-height:1.15;margin:4px 0 10px}
+.lede{color:var(--muted);font-size:15px;margin:0 0 6px}
+section.world{margin:38px 0 0;padding-top:6px;border-top:1.5px dashed var(--rule)}
+.num{font-family:'Playfair Display',Georgia,serif;font-style:italic;color:var(--accent);font-size:15px}
+h2{font-weight:600;font-size:22px;margin:0}
+.sub{color:var(--muted);font-size:14px;margin:0 0 8px}
+svg{width:100%;height:auto;display:block;overflow:visible;touch-action:manipulation}
+svg text{font-family:'Kanit',system-ui,sans-serif;fill:var(--ink);paint-order:stroke;stroke:var(--paper);stroke-width:4px;stroke-linejoin:round;pointer-events:none}
+.node{cursor:pointer}
+.node rect.card{stroke:var(--line);stroke-width:1.8}
+.node.on rect.card{stroke:var(--accent);stroke-width:3.2}
+.node.on .pin{animation:pulse 1.3s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.5)}}
+.thread path{stroke:var(--line);fill:none;stroke-width:1.8;stroke-linecap:round}
+.thread.bad path{stroke:var(--bad)}
+.thread.ready path{stroke:var(--accent);stroke-width:2.6}
+.thread.ready path.main{stroke-dasharray:6 5;animation:march .9s linear infinite}
+.thread.bad.ready path{stroke:var(--bad)}
+@keyframes march{to{stroke-dashoffset:-22}}
+.dot{fill:var(--pin);stroke:var(--line);stroke-width:1.5}
+.cap{min-height:3.2em;font-size:14.5px;margin:6px 2px 2px}
+.status{font-size:13px;color:var(--muted);margin:0 2px 8px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.chip{font:500 14px 'Kanit',system-ui,sans-serif;color:var(--ink);background:var(--box);border:1.8px solid var(--line);border-radius:999px;padding:7px 14px;cursor:pointer;min-height:40px}
+.chip:active{transform:translateY(1px)}
+.chip.off{opacity:.42;border-style:dashed}
+.chip.bad{border-color:var(--bad);color:var(--bad)}
+.chip.shake{animation:shake .3s}
+@keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.reset{font:400 13px 'Kanit',system-ui,sans-serif;color:var(--muted);background:none;border:none;text-decoration:underline;cursor:pointer;padding:8px 4px}
+ul.rules{list-style:none;margin:8px 0;padding:0}
+ul.rules li{font-size:14px;padding:5px 0 5px 26px;position:relative;border-bottom:1px dashed var(--rule)}
+ul.rules li::before{content:"✓";position:absolute;left:4px;color:var(--ok);font-weight:600}
+ul.rules li.broken{color:var(--bad)}
+ul.rules li.broken::before{content:"✗";color:var(--bad)}
+.stamp{display:none;border:3px solid var(--bad);color:var(--bad);background:var(--badbg);border-radius:8px;padding:8px 12px;margin:8px 0;transform:rotate(-1.5deg);font-weight:500;font-size:14px}
+.stamp b{display:block;font-size:16px;font-weight:600}
+.stamp.show{display:block}
+.tlc{font-size:12.5px;color:var(--muted);margin:6px 2px 0}
+.tlc code{font-family:ui-monospace,Menlo,monospace;font-size:11.5px}
+.foot{font-size:12.5px;color:var(--muted);margin-top:44px}
+.foot a{color:var(--accent)}
+</style>
+</head>
+<body>
+<main>
+<p class="kicker">statechart · pen &amp; coloured pencil</p>
+<h1>ห้าโลกเล็กๆ<br>แตะได้ทุกอย่าง</h1>
+<p class="lede">แต่ละโลกคือโมเดลเล็กๆ ที่ TLC ไล่ตรวจทุกสถานะมาแล้ว แตะชิปด้านล่างเพื่อเดินไปทีละก้าว แตะการ์ดเพื่ออ่านโน้ต และลองหาว่าโลกไหนมีบั๊ก</p>
+<div id="worlds"></div>
+<p class="foot">ไอเดียและสไตล์มาจาก <a href="https://april-zhu.com/fieldnotes">Field Notes</a> ของ April Zhu ซึ่งดัดแปลงจาก <a href="https://kevintngo.github.io/statechart-art/">statechart art</a> ของ Kevin T. Ngo (MIT) · โค้ดหน้านี้เขียนใหม่ทั้งหมด หัวข้อเป็นตัวอย่างจำลอง · ตรวจด้วย <a href="https://github.com/tlaplus/tlaplus">TLC</a> · layout วางด้วยมือ ไม่ได้ใช้ pele</p>
+</main>
+
+<script>
+(function(){
+var NS='http://www.w3.org/2000/svg';
+function el(n,a,p){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e;}
+function h(tag,attrs,parent,text){var e=document.createElement(tag);for(var k in attrs)e.setAttribute(k,attrs[k]);if(text!=null)e.textContent=text;if(parent)parent.appendChild(e);return e;}
+function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
+
+var A=30,B=190,NW=120,NH=40;
+function N(id,label,x,y,fill,note){return {id:id,label:label,x:x,y:y,w:NW,h:NH,fill:fill,note:note};}
+
+/* ---------------- the five worlds (mirror the TLA+ models) ---------------- */
+var worlds=[
+{
+  num:'I',title:'ล็อตปาล์มออยล์ 1 ลำ',sub:'จากใบเสนอราคาถึงท่าปลายทาง (ตัวอย่างจำลอง)',
+  fill:'var(--f1)',h:176,
+  nodes:[
+    N('quoted','เสนอราคา',A,16,'var(--f1)','ลูกค้าได้ใบเสนอราคาแล้ว ยังไม่มีสัญญา'),
+    N('contracted','เซ็นสัญญา',B,16,'var(--f1)','สัญญาเซ็นแล้ว ยังไม่มีเงินค้ำ'),
+    N('lcOpen','เปิด L/C แล้ว',B,86,'var(--f1)','ธนาคารเปิด L/C แล้ว เงินมีหลักประกัน'),
+    N('loaded','ขนลงเรือ',A,86,'var(--f1)','สินค้าอยู่บนเรือแล้ว'),
+    N('shipped','เรือออก',A,156,'var(--f1)','เรือออกจากท่า กำลังเดินทาง'),
+    N('delivered','ส่งมอบ',B,156,'var(--f1)','ถึงท่าปลายทาง ปิดล็อต')
+  ],
+  init:function(){return {s:'quoted',lc:false,rush:false};},
+  cur:function(v){return [v.s];},
+  status:function(v){return (v.rush?'ลูกค้าขอด่วน · ':'')+(v.lc?'มี L/C':'ยังไม่มี L/C');},
+  actions:[
+    {id:'markRush',label:'ลูกค้าขอด่วน',why:'ขอด่วนได้ตอนยังเป็นใบเสนอราคา',guard:function(v){return v.s==='quoted'&&!v.rush;},apply:function(v){v.rush=true;},threads:[]},
+    {id:'sign',label:'เซ็นสัญญา',why:'ต้องเริ่มจากใบเสนอราคา',guard:function(v){return v.s==='quoted';},apply:function(v){v.s='contracted';},threads:[['quoted','contracted']]},
+    {id:'openLC',label:'เปิด L/C',why:'ต้องเซ็นสัญญาก่อน',guard:function(v){return v.s==='contracted';},apply:function(v){v.s='lcOpen';v.lc=true;},threads:[['contracted','lcOpen']]},
+    {id:'load',label:'ขนลงเรือ',why:'ต้องเปิด L/C ก่อน',guard:function(v){return v.s==='lcOpen';},apply:function(v){v.s='loaded';},threads:[['lcOpen','loaded']]},
+    {id:'rushLoad',label:'⚡ ขนก่อน L/C',bad:true,why:'ทางลัดนี้ต้องมีออเดอร์ด่วนและเซ็นสัญญาแล้ว',guard:function(v){return v.s==='contracted'&&v.rush;},apply:function(v){v.s='loaded';},threads:[['contracted','loaded',0,true]]},
+    {id:'ship',label:'เรือออก',why:'ต้องขนลงเรือก่อน',guard:function(v){return v.s==='loaded';},apply:function(v){v.s='shipped';},threads:[['loaded','shipped']]},
+    {id:'deliver',label:'ส่งมอบ',why:'เรือต้องออกก่อน',guard:function(v){return v.s==='shipped';},apply:function(v){v.s='delivered';},threads:[['shipped','delivered']]}
+  ],
+  rules:[{t:'ขนของได้ต่อเมื่อเปิด L/C แล้ว',n:'LoadedNeedsLC',ok:function(v){return ['loaded','shipped','delivered'].indexOf(v.s)<0||v.lc;}}],
+  tlc:'TLC เจอบั๊ก: ลูกค้าขอด่วน → เซ็นสัญญา → ขนก่อน L/C (3 ก้าว) จากทั้งหมด 15 สถานะ',
+  trace:'ลูกค้าขอด่วน → เซ็นสัญญา → ขนก่อน L/C'
+},
+{
+  num:'II',title:'หนึ่งคลิปรีล',sub:'จากสคริปต์ถึงไฟล์ MP4',
+  fill:'var(--f2)',h:248,
+  nodes:[
+    N('script','สคริปต์',A,16,'var(--f2)','มีสคริปต์หรือคลิปดิบแล้ว'),
+    N('transcribed','ถอดเสียง',B,16,'var(--f2)','ได้ word timestamps แล้ว'),
+    N('proofread','ตรวจซับไทย',B,80,'var(--f2)','อ่านซับไทยทุกคำก่อนไปต่อ'),
+    N('planned','scene plan',A,80,'var(--f2)','แต่ละ beat ผูกกับคำพูดที่เรียกมัน'),
+    N('built','build',A,144,'var(--f2)','เขียน film.html ตาม format ที่เลือก'),
+    N('rendered','render',B,144,'var(--f2)','เรนเดอร์ทีละเฟรม แล้ว QA เช็ก flag'),
+    N('delivered','ส่งไฟล์ MP4',B,208,'var(--f2)','ไม่มี flag แล้ว พร้อมส่ง')
+  ],
+  init:function(){return {s:'script',flags:0};},
+  cur:function(v){return [v.s];},
+  status:function(v){return v.s==='rendered'?(v.flags?'QA เจอ flag 1 จุด':'QA ไม่เจอ flag'):'';},
+  actions:[
+    {id:'transcribe',label:'ถอดเสียง',why:'เริ่มจากสคริปต์',guard:function(v){return v.s==='script';},apply:function(v){v.s='transcribed';},threads:[['script','transcribed']]},
+    {id:'proofread',label:'ตรวจซับไทย',why:'ต้องถอดเสียงก่อน',guard:function(v){return v.s==='transcribed';},apply:function(v){v.s='proofread';},threads:[['transcribed','proofread']]},
+    {id:'plan',label:'เขียน plan',why:'ต้องตรวจซับก่อน',guard:function(v){return v.s==='proofread';},apply:function(v){v.s='planned';},threads:[['proofread','planned']]},
+    {id:'build',label:'build',why:'ต้องมี plan ก่อน',guard:function(v){return v.s==='planned';},apply:function(v){v.s='built';},threads:[['planned','built']]},
+    {id:'renderClean',label:'render ✓ ไม่มี flag',why:'ต้อง build ก่อน',guard:function(v){return v.s==='built';},apply:function(v){v.s='rendered';v.flags=0;},threads:[['built','rendered']]},
+    {id:'renderFlag',label:'render ⚠ มี flag',why:'ต้อง build ก่อน',guard:function(v){return v.s==='built';},apply:function(v){v.s='rendered';v.flags=1;},threads:[['built','rendered']]},
+    {id:'fix',label:'แก้ flag',why:'ไม่มี flag ให้แก้',guard:function(v){return v.s==='rendered'&&v.flags===1;},apply:function(v){v.s='built';v.flags=0;},threads:[['rendered','built',34]]},
+    {id:'deliver',label:'ส่งไฟล์',why:'ยังมี flag ค้างอยู่ ส่งไม่ได้',guard:function(v){return v.s==='rendered'&&v.flags===0;},apply:function(v){v.s='delivered';},threads:[['rendered','delivered']]}
+  ],
+  rules:[{t:'ส่งไฟล์ได้เมื่อ QA ไม่มี flag',n:'DeliveredIsClean',ok:function(v){return v.s!=='delivered'||v.flags===0;}}],
+  tlc:'TLC ตรวจ 8 สถานะ (9 ก้าว) ไม่พบบั๊ก ด่านตรวจซับอยู่ก่อน build แล้ว',
+  trace:''
+},
+{
+  num:'III',title:'บอทตอบ LINE',sub:'สองฝั่งขยับพร้อมกัน บอทกับคนทัก',
+  fill:'var(--f3)',h:176,groups:[['บอท',A],['คนทัก',B]],
+  nodes:[
+    N('bidle','ว่าง',A,30,'var(--f3)','บอทรอข้อความ'),
+    N('bthinking','กำลังคิด',A,96,'var(--f3)','บอทอ่านข้อความและหาคำตอบ'),
+    N('breplied','ตอบแล้ว',A,162,'var(--f3)','บอทส่งคำตอบแล้ว'),
+    N('uquiet','เงียบ',B,30,'var(--f3)','ยังไม่มีใครทักมา'),
+    N('uwaiting','รอคำตอบ',B,96,'var(--f3)','คนทักส่งข้อความแล้ว รออยู่'),
+    N('ureading','อ่านคำตอบ',B,162,'var(--f3)','คนทักกำลังอ่านที่บอทตอบ')
+  ],
+  init:function(){return {bot:'idle',user:'quiet'};},
+  cur:function(v){return ['b'+v.bot,'u'+(v.user)];},
+  status:function(v){return '';},
+  actions:[
+    {id:'send',label:'ส่งข้อความ',why:'ต้องรอให้รอบก่อนจบก่อน',guard:function(v){return v.bot==='idle'&&v.user==='quiet';},apply:function(v){v.bot='thinking';v.user='waiting';},threads:[['bidle','bthinking'],['uquiet','uwaiting']]},
+    {id:'reply',label:'บอทตอบ',why:'ยังไม่มีข้อความให้ตอบ',guard:function(v){return v.bot==='thinking';},apply:function(v){v.bot='replied';v.user='reading';},threads:[['bthinking','breplied'],['uwaiting','ureading']]},
+    {id:'done',label:'อ่านจบ',why:'ยังไม่มีคำตอบให้อ่าน',guard:function(v){return v.bot==='replied'&&v.user==='reading';},apply:function(v){v.bot='idle';v.user='quiet';},threads:[['breplied','bidle',-52],['ureading','uquiet',52]]}
+  ],
+  rules:[
+    {t:'บอทตอบได้เมื่อมีคนทักเท่านั้น',n:'NoReplyToNobody',ok:function(v){return v.bot!=='replied'||v.user!=='quiet';}},
+    {t:'ตอนบอทคิด คนทักต้องกำลังรออยู่',n:'ThinkingMeansWaiting',ok:function(v){return v.bot!=='thinking'||v.user==='waiting';}}
+  ],
+  tlc:'TLC ตรวจ 3 สถานะ (4 ก้าว) ไม่พบบั๊ก',
+  trace:''
+},
+{
+  num:'IV',title:'เวิร์กช็อป 1:1',sub:'จากการจองคิวถึงสรุปส่งท้าย',
+  fill:'var(--f4)',h:196,
+  nodes:[
+    N('booked','จองคิว',A,16,'var(--f4)','ผู้เรียนจองเวลาแล้ว'),
+    N('prepared','เตรียมสไลด์',B,16,'var(--f4)','สไลด์และตัวอย่างพร้อม'),
+    N('teaching','สอนสด 1:1',B,86,'var(--f4)','กำลังสอน ผู้เรียนถามต่อได้ไม่เกิน 2 รอบ'),
+    N('followup','ส่งสรุป',A,86,'var(--f4)','จบคลาสแล้ว เตรียมโน้ตสรุป'),
+    N('done','จบ',A,156,'var(--f4)','ส่งสรุปครบแล้ว')
+  ],
+  init:function(){return {s:'booked',prepared:false,q:0};},
+  cur:function(v){return [v.s];},
+  status:function(v){return v.s==='teaching'?('ถามต่อไปแล้ว '+v.q+'/2 รอบ'):'';},
+  actions:[
+    {id:'prepare',label:'เตรียมสไลด์',why:'ต้องเริ่มจากจองคิว',guard:function(v){return v.s==='booked';},apply:function(v){v.s='prepared';v.prepared=true;},threads:[['booked','prepared']]},
+    {id:'teach',label:'เริ่มสอน',why:'ต้องเตรียมสไลด์ก่อน',guard:function(v){return v.s==='prepared';},apply:function(v){v.s='teaching';},threads:[['prepared','teaching']]},
+    {id:'ask',label:'ถามต่อ',why:'ถามได้เฉพาะตอนสอน และไม่เกิน 2 รอบ',guard:function(v){return v.s==='teaching'&&v.q<2;},apply:function(v){v.q+=1;},threads:[['teaching','teaching']]},
+    {id:'wrap',label:'จบคลาส',why:'ต้องกำลังสอนอยู่',guard:function(v){return v.s==='teaching';},apply:function(v){v.s='followup';},threads:[['teaching','followup']]},
+    {id:'notes',label:'ส่งสรุป',why:'ต้องจบคลาสก่อน',guard:function(v){return v.s==='followup';},apply:function(v){v.s='done';},threads:[['followup','done']]}
+  ],
+  rules:[
+    {t:'สอนได้เมื่อเตรียมสไลด์แล้ว',n:'TeachingNeedsPrep',ok:function(v){return ['teaching','followup','done'].indexOf(v.s)<0||v.prepared;}},
+    {t:'ถามต่อได้ไม่เกิน 2 รอบ',n:'AtMostTwoQuestions',ok:function(v){return v.q<=2;}}
+  ],
+  tlc:'TLC ตรวจ 11 สถานะ (11 ก้าว) ไม่พบบั๊ก',
+  trace:''
+},
+{
+  num:'V',title:'เสาร์ช้าๆ',sub:'กาแฟ โปรเจกต์ข้าง และการงีบ',
+  fill:'var(--f5)',h:196,
+  nodes:[
+    N('asleep','นอนต่อ',A,16,'var(--f5)','ยังไม่ตั้งนาฬิกาปลุก'),
+    N('coffee','กาแฟ',B,16,'var(--f5)','ชงกาแฟแก้วแรกของวัน'),
+    N('project','โปรเจกต์ข้าง',B,86,'var(--f5)','เปิดแล็ปท็อปได้เมื่อมีกาแฟแล้ว'),
+    N('nap','งีบ',A,86,'var(--f5)','เหนื่อยแล้ว งีบสักพัก'),
+    N('dinner','มื้อเย็น',A,156,'var(--f5)','อิ่มแล้วค่อยว่ากัน'),
+    N('night','ปิดวัน',B,156,'var(--f5)','จบวันเสาร์')
+  ],
+  init:function(){return {s:'asleep',cups:0,tired:false};},
+  cur:function(v){return [v.s];},
+  status:function(v){return 'กาแฟ '+v.cups+'/2 แก้ว · '+(v.tired?'เริ่มเหนื่อย':'สดชื่น');},
+  actions:[
+    {id:'wake',label:'ตื่น',why:'ตื่นได้ตอนยังนอนอยู่',guard:function(v){return v.s==='asleep';},apply:function(v){v.s='coffee';v.cups=1;},threads:[['asleep','coffee']]},
+    {id:'hack',label:'เปิดโปรเจกต์',why:'ต้องมีกาแฟก่อน',guard:function(v){return v.s==='coffee'&&v.cups>=1;},apply:function(v){v.s='project';v.tired=true;},threads:[['coffee','project']]},
+    {id:'nap',label:'งีบ',why:'งีบหลังทำงานเท่านั้น',guard:function(v){return v.s==='project'&&v.tired;},apply:function(v){v.s='nap';v.tired=false;},threads:[['project','nap']]},
+    {id:'refill',label:'เติมกาแฟ',why:'เติมได้ตอนงีบเสร็จ และไม่เกิน 2 แก้ว',guard:function(v){return v.s==='nap'&&v.cups<2;},apply:function(v){v.s='coffee';v.cups+=1;},threads:[['nap','coffee']]},
+    {id:'dinner',label:'กินข้าวเย็น',why:'ต้องงีบเสร็จก่อน',guard:function(v){return v.s==='nap';},apply:function(v){v.s='dinner';},threads:[['nap','dinner']]},
+    {id:'night',label:'ปิดวัน',why:'ต้องกินข้าวเย็นก่อน',guard:function(v){return v.s==='dinner';},apply:function(v){v.s='night';},threads:[['dinner','night']]}
+  ],
+  rules:[
+    {t:'เปิดโปรเจกต์ได้เมื่อมีกาแฟแล้ว',n:'ProjectNeedsCoffee',ok:function(v){return v.s!=='project'||v.cups>=1;}},
+    {t:'ตอนงีบต้องไม่เหนื่อยค้าง',n:'NeverNapRested',ok:function(v){return v.s!=='nap'||!v.tired;}}
+  ],
+  tlc:'TLC ตรวจ 11 สถานะ (11 ก้าว) ไม่พบบั๊ก',
+  trace:''
+}
+];
+
+/* ---------------- drawing helpers ---------------- */
+function center(n){return [n.x+n.w/2,n.y+n.h/2];}
+function edgePt(n,tx,ty,pad){
+  var c=center(n),dx=tx-c[0],dy=ty-c[1];
+  var sx=dx?(n.w/2)/Math.abs(dx):1e9, sy=dy?(n.h/2)/Math.abs(dy):1e9;
+  var t=Math.min(sx,sy), len=Math.sqrt(dx*dx+dy*dy)||1;
+  var k=t+(pad||0)/len;
+  return [c[0]+dx*k,c[1]+dy*k];
+}
+function arrowHead(g,x,y,fromx,fromy){
+  var a=Math.atan2(y-fromy,x-fromx),L=9;
+  [-0.5,0.5].forEach(function(s){
+    el('path',{d:'M'+x+' '+y+' L'+(x-L*Math.cos(a+s))+' '+(y-L*Math.sin(a+s))},g);
+  });
+}
+
+function mount(w,idx){
+  var seed=idx*977+13;function rnd(){seed=(seed*16807)%2147483647;return (seed-1)/2147483646;}
+  var sec=h('section',{'class':'world'},document.getElementById('worlds'));
+  var hd=h('div',{},sec);
+  h('span',{'class':'num'},hd,w.num);
+  h('h2',{},hd,w.title);
+  h('p',{'class':'sub'},hd,w.sub);
+
+  var H=w.h+34;
+  var svg=el('svg',{viewBox:'0 0 340 '+H,role:'img','aria-label':w.title+' statechart'},sec);
+  var d=el('defs',{},svg);
+  var f=el('filter',{id:'pen'+idx,x:'-5%',y:'-5%',width:'110%',height:'110%'},d);
+  el('feTurbulence',{type:'fractalNoise',baseFrequency:'0.035',numOctaves:'2',seed:String(3+idx),result:'n'},f);
+  el('feDisplacementMap',{'in':'SourceGraphic',in2:'n',scale:'2.6'},f);
+
+  var ink=el('g',{filter:'url(#pen'+idx+')'},svg);
+  var byId={};w.nodes.forEach(function(n){byId[n.id]=n;});
+
+  // threads (deduped)
+  var threads={};
+  var tgroup=el('g',{},ink);
+  w.actions.forEach(function(a){
+    a.threads.forEach(function(t){
+      var key=t[0]+'>'+t[1];
+      if(threads[key])return;
+      var A_=byId[t[0]],B_=byId[t[1]],bend=t[2]||0,bad=!!t[3];
+      var g=el('g',{'class':'thread'+(bad?' bad':'')},tgroup);
+      var d_,mainEl,ex,ey,cx,cy;
+      if(t[0]===t[1]){
+        var x=A_.x+A_.w,y=A_.y;
+        d_='M'+x+' '+(y+10)+' C '+(x+28)+' '+(y-4)+' '+(x+28)+' '+(y+A_.h+4)+' '+x+' '+(y+A_.h-10);
+        mainEl=el('path',{d:d_,'class':'main'},g);
+        arrowHead(g,x,y+A_.h-10,x+28,y+A_.h+4);
+      }else{
+        var ca=center(A_),cb=center(B_);
+        var dx=cb[0]-ca[0],dy=cb[1]-ca[1],len=Math.sqrt(dx*dx+dy*dy)||1;
+        var nx=-dy/len,ny=dx/len;
+        cx=(ca[0]+cb[0])/2+nx*(bend||0)+(bend?0:(rnd()-.5)*5);
+        cy=(ca[1]+cb[1])/2+ny*(bend||0)+(bend?0:(rnd()-.5)*5);
+        var s=edgePt(A_,cx,cy,3),e=edgePt(B_,cx,cy,6);
+        mainEl=el('path',{d:'M'+s[0]+' '+s[1]+' Q'+cx+' '+cy+' '+e[0]+' '+e[1],'class':'main'},g);
+        arrowHead(g,e[0],e[1],cx,cy);
+      }
+      threads[key]=g;
+    });
+  });
+
+  // group headings
+  var txtTop=el('g',{},svg);
+  (w.groups||[]).forEach(function(gr){
+    var t=el('text',{x:gr[1]+NW/2,y:18,'text-anchor':'middle','font-size':12.5,style:'fill:var(--accent);font-style:italic'},txtTop);
+    t.textContent=gr[0];
+  });
+
+  // nodes
+  var nodeEls={};
+  var ngroup=el('g',{},ink);
+  w.nodes.forEach(function(n,i){
+    var rot=(i%2?0.8:-0.8);
+    var g=el('g',{'class':'node',transform:'rotate('+rot+' '+(n.x+n.w/2)+' '+(n.y+n.h/2)+')',tabindex:'0',role:'button','aria-label':n.label},ngroup);
+    el('rect',{'class':'card',x:n.x,y:n.y,width:n.w,height:n.h,rx:6,fill:n.fill},g);
+    for(var k=0;k<n.h+n.w;k+=8){
+      var x1=n.x+Math.max(0,k-n.h),y1=n.y+Math.min(n.h,k),x2=n.x+Math.min(n.w,k),y2=n.y+Math.max(0,k-n.w);
+      el('line',{x1:x1,y1:y1,x2:x2,y2:y2,stroke:'var(--pin)','stroke-width':1.1,opacity:.28,'pointer-events':'none'},g);
+    }
+    el('circle',{'class':'pin',cx:n.x+9,cy:n.y+9,r:4.5,fill:'var(--pin)',stroke:'var(--line)','stroke-width':1.2},g);
+    nodeEls[n.id]=g;
+    g.addEventListener('click',function(){showNote(n);});
+    g.addEventListener('keydown',function(ev){if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();showNote(n);}});
+  });
+  var tx=el('g',{},svg);
+  w.nodes.forEach(function(n,i){
+    var rot=(i%2?0.8:-0.8);
+    var t=el('text',{x:n.x+n.w/2,y:n.y+n.h/2+5,'text-anchor':'middle','font-size':15,'font-weight':500,transform:'rotate('+rot+' '+(n.x+n.w/2)+' '+(n.y+n.h/2)+')'},tx);
+    t.textContent=n.label;
+  });
+  var dot=el('circle',{'class':'dot',r:6,cx:-20,cy:-20},svg);
+
+  var cap=h('p',{'class':'cap','aria-live':'polite'},sec);
+  var status=h('p',{'class':'status'},sec);
+  var stamp=h('div',{'class':'stamp',role:'alert'},sec);
+  var chipsBox=h('div',{'class':'chips'},sec);
+  var rulesUl=h('ul',{'class':'rules'},sec);
+  var ruleEls=w.rules.map(function(r){return h('li',{},rulesUl,r.t);});
+  h('p',{'class':'tlc'},sec,'ผลตรวจ · '+w.tlc);
+  var reset=h('button',{'class':'reset',type:'button'},sec,'เริ่มใหม่');
+
+  var v=w.init(),history=[],busy=false;
+  var chipEls=w.actions.map(function(a){
+    var b=h('button',{'class':'chip'+(a.bad?' bad':''),type:'button'},chipsBox,a.label);
+    b.addEventListener('click',function(){fire(a,b);});
+    return b;
+  });
+
+  function showNote(n){cap.textContent=n.label+' · '+n.note;}
+
+  function render(){
+    var cur=w.cur(v);
+    w.nodes.forEach(function(n){nodeEls[n.id].setAttribute('class','node'+(cur.indexOf(n.id)>=0?' on':''));});
+    var readyKeys={};
+    w.actions.forEach(function(a,i){
+      var ok=a.guard(v);
+      chipEls[i].setAttribute('class','chip'+(a.bad?' bad':'')+(ok?'':' off'));
+      if(ok)a.threads.forEach(function(t){readyKeys[t[0]+'>'+t[1]]=true;});
+    });
+    Object.keys(threads).forEach(function(k){
+      var base=threads[k].getAttribute('class').replace(' ready','');
+      threads[k].setAttribute('class',base+(readyKeys[k]?' ready':''));
+    });
+    status.textContent=w.status(v);
+    var broken=[];
+    w.rules.forEach(function(r,i){
+      var ok=r.ok(v);
+      ruleEls[i].setAttribute('class',ok?'':'broken');
+      if(!ok)broken.push(r);
+    });
+    if(broken.length){
+      stamp.className='stamp show';
+      stamp.innerHTML='';
+      h('b',{},stamp,'กฎพัง: '+broken[0].n);
+      h('span',{},stamp,'เส้นทางของคุณ: '+history.join(' → ')+(w.trace?'  ·  TLC หาเจอเหมือนกัน: '+w.trace:''));
+    }else{stamp.className='stamp';}
+  }
+
+  async function fire(a,btn){
+    if(busy)return;
+    if(!a.guard(v)){
+      btn.classList.add('shake');setTimeout(function(){btn.classList.remove('shake');},320);
+      cap.textContent='ยังทำไม่ได้: '+a.why;
+      return;
+    }
+    busy=true;
+    for(var i=0;i<a.threads.length;i++){
+      var g=threads[a.threads[i][0]+'>'+a.threads[i][1]];
+      var p=g.querySelector('path.main');
+      var L=p.getTotalLength(),t0=null;
+      await new Promise(function(res){
+        function step(ts){
+          if(t0==null)t0=ts;
+          var k=Math.min(1,(ts-t0)/380);
+          var pt=p.getPointAtLength(L*k);
+          dot.setAttribute('cx',pt.x);dot.setAttribute('cy',pt.y);
+          if(k<1)requestAnimationFrame(step);else res();
+        }
+        requestAnimationFrame(step);
+      });
+    }
+    dot.setAttribute('cx',-20);dot.setAttribute('cy',-20);
+    a.apply(v);history.push(a.label);
+    render();
+    var n=byId[w.cur(v)[0]];
+    if(n)showNote(n);
+    busy=false;
+  }
+
+  reset.addEventListener('click',function(){
+    v=w.init();history=[];busy=false;render();showNote(w.nodes[0]);
+  });
+  render();showNote(w.nodes[0]);
+}
+worlds.forEach(mount);
+})();
+</script>
+</body>
+</html>
