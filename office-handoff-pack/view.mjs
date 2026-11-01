@@ -20,7 +20,7 @@ export const steps = {
   Idea:    { from: 'trend',    to: 'idea',     label: 'ส่งเทรนด์ให้นักคิด' },
   Script:  { from: 'idea',     to: 'script',   label: 'ส่งไอเดียให้นักเขียน' },
   Submit:  { from: 'script',   to: 'waiting',  label: 'ยื่นสคริปต์เข้าตู้รออนุมัติ' },
-  Approve: { from: 'waiting',  to: 'approved', label: 'เจ้าของเปิดตู้ อนุมัติ (ด่านที่ 1)', gate: true },
+  Approve: { from: 'waiting',  to: 'approved', label: 'เจ้าของเปิดตู้ อนุมัติ', gate: true },
   Video:   { from: 'approved', to: 'video',    label: 'สั่งทำวิดีโอ' },
   Edit:    { from: 'video',    to: 'edit',     label: 'ดึงไฟล์มาตัดต่อรีล' },
   Post:    { from: 'edit',     to: 'idle',     label: 'ปล่อยงาน วัดผล วนกลับไปหาเทรนด์', loop: true, max: 2 },
