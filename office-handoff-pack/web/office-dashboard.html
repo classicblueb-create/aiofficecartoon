@@ -58,6 +58,13 @@ textarea{width:100%;min-height:64px;font:inherit;font-size:14px;background:var(-
 .muted{color:var(--muted)}
 .credit{grid-column:1/-1;font-size:12px;color:var(--muted);text-align:center;line-height:1.5}
 a{color:var(--info)}
+label{display:block;font-size:13px;margin:8px 0 2px}
+input[type=text],input[type=date],select{width:100%;font:inherit;font-size:14px;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px 8px}
+.checks{display:flex;flex-wrap:wrap;gap:4px 12px}.checks label{display:inline-flex;gap:4px;align-items:center;margin:0;font-size:13px}
+.zbtn{position:relative}.zbtn.on{background:var(--ink);color:var(--card)}.zbtn b{font-size:11px;margin-left:4px;background:var(--thread);color:#fff;border-radius:999px;padding:0 6px}
+.now{border-left:4px solid var(--thread);padding:4px 10px;margin:8px 0;font-size:14px;background:var(--bg);border-radius:0 6px 6px 0}
+.star{color:var(--warn)}
+canvas.hot{cursor:pointer}
 @media (prefers-reduced-motion:reduce){.meter>i{transition:none}}
 </style>
 <div class="wrap">
@@ -67,6 +74,7 @@ a{color:var(--info)}
  </header>
  <main>
   <div class="stage"><canvas id="cv" aria-label="เกาะลอยออฟฟิศ 6 โซน แสดงตำแหน่งของงานที่เลือก"></canvas></div>
+  <div class="bar" id="zbar" role="group" aria-label="เลือกจุดบนเกาะ"></div>
   <div class="bar" role="group" aria-label="ควบคุมภาพเกาะ">
    <button id="mLive" class="on" aria-pressed="true">ตามงานจริง</button>
    <button id="mDemo" aria-pressed="false">สาธิตวนเอง</button>
@@ -79,7 +87,10 @@ a{color:var(--info)}
  <aside class="panel" aria-label="แผงงาน">
   <div id="errBox" hidden></div>
   <section id="gate" hidden></section>
-  <section><h2>งานของทีม</h2><div id="jobs" class="panel"></div></section>
+  <section class="card" id="newJob"></section>
+  <section id="zonePanel" hidden></section>
+  <section><h2>งานทั้งหมด</h2><div id="jobs" class="panel"></div></section>
+  <section class="card" id="feedCard" hidden><h2>ความเคลื่อนไหวของงานที่ติดตาม</h2><ul id="feed" class="log"></ul></section>
   <section><h2>ทีมกับตัวต่อ</h2><div id="teams" class="teams"></div></section>
   <section class="card"><h2>บันทึกการตัดสินใจ</h2><ul id="log" class="log"><li class="muted">ยังไม่มีการตัดสินใจ</li></ul></section>
  </aside>
@@ -519,13 +530,16 @@ function drawDynamic(ctx, S) {
 
 </script>
 <script>
-/* ===== dashboard: live jobs from Notion, approval gate, island sync ===== */
+/* ===== dashboard: live jobs from Notion, click zones, follow, approve, add jobs ===== */
 (function () {
-  const DS = 'collection://ebc4f6b4-2799-4a65-b323-83f743a9b18f', SRV = 'Notion', TOOL_Q = 'notion-query-data-sources', TOOL_U = 'notion-update-page';
+  const DS = 'collection://ebc4f6b4-2799-4a65-b323-83f743a9b18f', DS_ID = 'ebc4f6b4-2799-4a65-b323-83f743a9b18f', SRV = 'Notion', TOOL_Q = 'notion-query-data-sources', TOOL_U = 'notion-update-page', TOOL_C = 'notion-create-pages';
   const QUERY = { data: { mode: 'rows', data_source_url: DS, limit: 50 } };
   const STATUS_STEP = { 'คิวรอ': -1, 'ค้นเทรนด์': 0, 'คิดคอนเทนต์': 1, 'เขียนสคริป': 2, 'รอคุณอนุมัติ': 3, 'อนุมัติแล้ว': 4, 'ทำเสียง/วิดีโอ': 5, 'ตัดต่อรีล': 6, 'พร้อมโพสต์ (ร่าง)': 7, 'โพสต์แล้ว': 7 };
   const STEP_LABEL = ['ค้นเทรนด์', 'คิดไอเดีย', 'เขียนสคริป', 'ยื่นตู้', 'อนุมัติ', 'เสียง/วิดีโอ', 'ตัดต่อ', 'ปล่อย'];
-  const STATUS_TEAM = { 'ค้นเทรนด์': 'หาและคิด', 'คิดคอนเทนต์': 'หาและคิด', 'เขียนสคริป': 'เขียนและอนุมัติ', 'รอคุณอนุมัติ': 'เขียนและอนุมัติ', 'อนุมัติแล้ว': 'ผลิต', 'ทำเสียง/วิดีโอ': 'ผลิต', 'ตัดต่อรีล': 'ผลิต', 'พร้อมโพสต์ (ร่าง)': 'ปล่อยและเรียนรู้', 'โพสต์แล้ว': 'ปล่อยและเรียนรู้' };
+  const ZONE_OF_STATUS = { 'คิวรอ': 'owner', 'ค้นเทรนด์': 'z1', 'คิดคอนเทนต์': 'z1', 'เขียนสคริป': 'z2', 'รอคุณอนุมัติ': 'z2', 'อนุมัติแล้ว': 'owner', 'ทำเสียง/วิดีโอ': 'z3', 'ตัดต่อรีล': 'z3', 'พร้อมโพสต์ (ร่าง)': 'z4', 'โพสต์แล้ว': 'z4' };
+  const TEAM_ZONE = { 'หาและคิด': 'z1', 'เขียนและอนุมัติ': 'z2', 'ผลิต': 'z3', 'ปล่อยและเรียนรู้': 'z4', 'รายได้': 'z5', 'หลังบ้าน': 'z6' };
+  const ZONE_TEAM = { z1: 'หาและคิด', z2: 'เขียนและอนุมัติ', z3: 'ผลิต', z4: 'ปล่อยและเรียนรู้', z5: 'รายได้', z6: 'หลังบ้าน' };
+  const ACTIVITY = { 'คิวรอ': 'อยู่ในคิว รอเจ้าของสั่งเริ่ม', 'ค้นเทรนด์': 'นักจับเทรนด์ กำลังค้นเทรนด์ (Apify + ค้นเว็บ)', 'คิดคอนเทนต์': 'นักคิดคอนเทนต์ กำลังเลือกมุมเนื้อหา', 'เขียนสคริป': 'นักเขียนสคริป กำลังร่างสคริปต์', 'รอคุณอนุมัติ': 'ตู้รออนุมัติ: ทีมหยุดรอคุณตรวจสคริปต์', 'อนุมัติแล้ว': 'อนุมัติแล้ว รอทีมผลิตเริ่ม (เสียงพากย์ ElevenLabs)', 'ทำเสียง/วิดีโอ': 'ทีมผลิต กำลังทำเสียง/วิดีโอ', 'ตัดต่อรีล': 'นักตัดต่อรีล กำลังตัดต่อ', 'พร้อมโพสต์ (ร่าง)': 'ผู้ปล่อยงาน เตรียมนัดโพสต์ (ร่าง ยังไม่ส่งออก)', 'โพสต์แล้ว': 'โพสต์แล้ว นักวัดผลรอดูผล', 'ติดปัญหา': 'ติดปัญหา ดูโน้ตทีม' };
   const TEAMS = [
     { n: 'หาและคิด', c: [['Notion', 'ใช้แล้ว'], ['Apify', 'ใช้แล้ว']] },
     { n: 'เขียนและอนุมัติ', c: [['Notion', 'ใช้แล้ว'], ['Google Docs/Drive', 'ยังไม่ใช้ (สคริปต์อยู่ใน Notion)']] },
@@ -534,17 +548,30 @@ function drawDynamic(ctx, S) {
     { n: 'รายได้', c: [['—', 'ยังไม่ตั้งค่าตัวต่อ']] },
     { n: 'หลังบ้าน', c: [['—', 'ยังไม่ตั้งค่าตัวต่อ']] },
   ];
+  const CONNECTORS = ['Notion', 'Apify', 'Google Docs', 'Google Drive', 'ElevenLabs', 'Google Calendar'];
+  // จุดที่กดได้บนเกาะ (พิกัด 1000x1000 ของ canvas)
+  const HIT = [
+    { k: 'z2', x: 600, y: 445, rx: 36, ry: 40 }, // ตู้รออนุมัติ
+    { k: 'owner', x: 500, y: 540, rx: 70, ry: 50 },
+    ...['z1', 'z2', 'z3', 'z4', 'z5', 'z6'].map(k => ({ k, x: ZONES[k].x, y: ZONES[k].by - 28, rx: 92, ry: 78 })),
+  ];
   const $ = id => document.getElementById(id);
   function h(tag, props, ...kids) { const e = document.createElement(tag); for (const k in props || {}) { const v = props[k]; if (k === 'class') e.className = v; else if (k === 'on') { for (const ev in v) e.addEventListener(ev, v[ev]); } else if (v !== false && v != null) e.setAttribute(k, v === true ? '' : v); } for (const c of kids.flat()) { if (c == null || c === false) continue; e.append(c.nodeType ? c : document.createTextNode(String(c))); } return e; }
+  const put = (el, ...k) => { k.flat().forEach(c => { if (c != null && c !== false) el.append(c.nodeType ? c : document.createTextNode(String(c))); }); };
   const keyOf = url => (String(url).match(/[0-9a-f]{32}/i) || [String(url).replace(/\W+/g, '').slice(-32)])[0];
   function toJob(r) { let conn = []; try { conn = JSON.parse(r['ตัวต่อที่ใช้'] || '[]'); } catch (e) { } return { id: keyOf(r.url), url: r.url, title: r['งาน'] || '(ไม่มีชื่อ)', status: r['สถานะ'] || 'คิวรอ', team: r['ทีม'] || '', progress: Number(r['ความคืบหน้า'] || 0), approved: r['คุณอนุมัติแล้ว'] === '__YES__', conn, note: r['โน้ตทีม'] || '', role: r['ผู้รับผิดชอบ (บทบาท)'] || '', edited: r['แก้ไขล่าสุด'] || '', link: r['ลิงก์ผลงาน'] || '', due: r['date:นัดโพสต์:start'] || '' }; }
   const rowsOf = res => { const p = res && res.payload; const a = p && Array.isArray(p.results) ? p.results : []; return a.map(toJob); };
+  const zoneOfJob = j => (j.team === 'รายได้' || j.team === 'หลังบ้าน') ? TEAM_ZONE[j.team] : (ZONE_OF_STATUS[j.status] || TEAM_ZONE[j.team] || 'owner');
+  const ago = iso => { if (!iso) return ''; const m = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000)); return m < 1 ? 'เมื่อสักครู่' : m < 60 ? m + ' นาทีที่แล้ว' : m < 1440 ? Math.round(m / 60) + ' ชม.ที่แล้ว' : Math.round(m / 1440) + ' วันที่แล้ว'; };
 
-  const S = { jobs: [], sel: null, mode: 'live', mcp: null, db: null, user: null, owner: false, uid: null, busy: false, confirm: null, msg: null, err: null, storedAt: null, liveStart: 0, demo: { cur: 0, cycle: 0, playing: true, speed: 1, start: 0 }, px: 0 };
+  const S = { jobs: [], sel: null, zone: null, mode: 'live', mcp: null, db: null, user: null, owner: false, uid: null, busy: false, confirm: null, msg: null, err: null, storedAt: null, liveStart: 0, demo: { cur: 0, cycle: 0, playing: true, speed: 1, start: 0 }, px: 0, follow: new Set(), feed: [], prev: null, formOpen: false, newBusy: false, newMsg: null, form: { title: '', team: 'หาและคิด', status: 'คิวรอ', brief: '', due: '', conn: new Set(['Notion']) } };
+  try { JSON.parse(localStorage.getItem('office-follow') || '[]').forEach(x => S.follow.add(x)); } catch (e) { }
+  const saveFollow = () => { try { localStorage.setItem('office-follow', JSON.stringify([...S.follow])); } catch (e) { } };
   const selJob = () => S.jobs.find(j => j.id === S.sel) || null;
   const stepOf = j => (j && STATUS_STEP[j.status] != null) ? STATUS_STEP[j.status] : null;
+  const jobsIn = k => S.jobs.filter(j => zoneOfJob(j) === k);
 
-  /* ---------- rendering ---------- */
+  /* ---------- errors ---------- */
   function errText(e) {
     const c = e && e.code;
     if (c === 'needs_reauth' || c === 'server_not_connected' || c === 'server_not_found') return 'ต่อ Notion ไม่ได้: เชื่อมต่อ Notion ใหม่ที่ claude.ai → Settings → Connectors แล้วโหลดหน้านี้อีกครั้ง';
@@ -552,110 +579,186 @@ function drawDynamic(ctx, S) {
     if (c === 'blocked_by_policy') return 'องค์กรของคุณบล็อกการเรียก Notion จากหน้านี้';
     if (c === 'selection_required') return 'มีตัวต่อ Notion มากกว่าหนึ่งตัว เลือกตัวที่ใช้ในหน้าต่างที่ claude.ai แสดง';
     if (c === 'tool_error') return 'Notion ตอบกลับว่าทำไม่สำเร็จ: ' + String(e.message || '').slice(0, 160);
-    if (c === 'server_unavailable' || c === 'upstream_error') return 'Notion ไม่ตอบสนองชั่วคราว ลองกด "โหลดใหม่" อีกครั้ง';
+    if (c === 'server_unavailable' || c === 'upstream_error') return 'Notion ไม่ตอบสนองชั่วคราว';
     return 'เกิดข้อผิดพลาด (' + (c || 'ไม่ทราบ') + ')';
   }
+  const needsPerm = e => e && ['approval_required', 'not_in_manifest', 'consent_required'].includes(e.code);
   function renderErr() {
     const b = $('errBox'); b.replaceChildren(); if (!S.err) { b.hidden = true; return; } b.hidden = false;
-    const needs = ['approval_required', 'not_in_manifest', 'consent_required'].includes(S.err.code);
-    b.append(h('div', { class: 'banner', role: 'alert' }, errText(S.err), ' ', needs ? h('button', { on: { click: askPerm } }, 'อนุญาต Notion') : h('button', { on: { click: () => startWatch(true) } }, 'โหลดใหม่')));
+    b.append(h('div', { class: 'banner', role: 'alert' }, errText(S.err), ' ', needsPerm(S.err) ? h('button', { on: { click: askPerm } }, 'อนุญาต Notion') : h('button', { on: { click: () => startWatch(true) } }, 'โหลดใหม่')));
   }
+
+  /* ---------- job cards ---------- */
   function stepper(j) { const a = stepOf(j), all = j.status === 'โพสต์แล้ว'; return h('div', { class: 'steps', 'aria-label': 'ขั้นของงาน' }, STEP_LABEL.map((l, i) => h('span', { class: (all || (a != null && i < a) ? 'done' : (a === i ? 'cur' : '')) + (i === 4 ? ' gate' : '') }, l))); }
   function chipFor(st) { const c = st === 'โพสต์แล้ว' ? 'ok' : st === 'รอคุณอนุมัติ' ? 'gate' : st === 'ติดปัญหา' ? 'bad' : 'info'; return h('span', { class: 'chip ' + c }, st); }
+  function gateBox(j) {
+    const box = h('div', { class: 'gatebox' }, h('h2', null, 'ด่านที่ 1: รอคุณอนุมัติ'),
+      h('p', { class: 'sub' }, 'อ่านสคริปต์ใน Notion ก่อนตัดสินใจ หลังอนุมัติ ทีมผลิตถึงจะเริ่มทำเสียงได้ (ใช้เครดิต ElevenLabs ของคุณ) ยังไม่มีอะไรถูกส่งออกหรือโพสต์'),
+      h('div', { class: 'row' }, h('a', { class: 'btn', href: j.url, target: '_blank', rel: 'noopener' }, 'อ่านสคริปต์ใน Notion')));
+    if (!S.owner) box.append(h('p', { class: 'msg' }, 'เฉพาะเจ้าของหน้านี้กดอนุมัติได้'));
+    else if (!S.mcp) box.append(h('p', { class: 'msg err' }, 'เปิดหน้านี้ใน claude.ai เพื่อกดอนุมัติ (ต้องใช้ตัวต่อ Notion)'));
+    else if (S.confirm && S.confirm.id === j.id) {
+      const isA = S.confirm.kind === 'approve'; const ta = isA ? null : h('textarea', { 'aria-label': 'ต้องการให้แก้อะไร', placeholder: 'ต้องการให้แก้อะไร (จำเป็น)' });
+      put(box, h('p', null, isA ? 'ยืนยัน: อนุมัติสคริปต์นี้ใช่ไหม' : 'ส่งกลับให้นักเขียนแก้'), ta,
+        h('div', { class: 'row' },
+          h('button', { class: isA ? 'go' : 'warn', disabled: S.busy, on: { click: () => decide(j, S.confirm.kind, ta ? ta.value.trim() : '') } }, S.busy ? 'กำลังบันทึก…' : isA ? 'ยืนยันอนุมัติ' : 'ส่งกลับให้แก้'),
+          h('button', { disabled: S.busy, on: { click: () => { S.confirm = null; renderAll(); } } }, 'ยกเลิก')));
+    } else box.append(h('div', { class: 'row' }, h('button', { class: 'go', on: { click: () => { S.confirm = { id: j.id, kind: 'approve' }; S.msg = null; renderAll(); } } }, 'อนุมัติสคริปต์'), h('button', { class: 'warn', on: { click: () => { S.confirm = { id: j.id, kind: 'revise' }; S.msg = null; renderAll(); } } }, 'ขอแก้ไข')));
+    if (S.msg && (!S.msg.id || S.msg.id === j.id)) box.append(h('p', { class: 'msg ' + S.msg.k, role: 'status' }, S.msg.t));
+    return box;
+  }
   function jobCard(j) {
-    const pct = Math.round(clamp(j.progress, 0, 1) * 100);
+    const pct = Math.round(clamp(j.progress, 0, 1) * 100), fol = S.follow.has(j.id);
     return h('article', { class: 'card' + (j.id === S.sel ? ' sel' : ''), 'data-job': j.id },
-      h('div', { class: 'row' }, chipFor(j.status), j.team && h('span', { class: 'chip' }, j.team), j.approved ? h('span', { class: 'chip ok' }, 'คุณอนุมัติแล้ว') : h('span', { class: 'chip' }, 'ยังไม่อนุมัติ')),
+      h('div', { class: 'row' }, chipFor(j.status), j.team && h('span', { class: 'chip' }, j.team), j.approved ? h('span', { class: 'chip ok' }, 'คุณอนุมัติแล้ว') : h('span', { class: 'chip' }, 'ยังไม่อนุมัติ'), fol && h('span', { class: 'chip star' }, '★ ติดตาม')),
       h('h3', null, j.title),
+      h('div', { class: 'now' }, h('b', null, 'ตอนนี้: '), ACTIVITY[j.status] || j.status, h('div', { class: 'sub' }, 'ตามสถานะใน Notion · แก้ไขล่าสุด ' + ago(j.edited))),
       h('div', { class: 'meter', role: 'progressbar', 'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-valuenow': pct, 'aria-label': 'ความคืบหน้า' }, h('i', { style: 'width:' + pct + '%' })),
       h('div', { class: 'pct' }, h('span', null, j.role || ''), h('span', null, pct + '%')),
       stepper(j),
       j.conn.length ? h('div', { class: 'row', style: 'margin-top:8px' }, j.conn.map(c => h('span', { class: 'chip' }, c))) : null,
       j.note ? h('p', { class: 'sub', style: 'margin:8px 0 0' }, j.note) : null,
+      j.status === 'รอคุณอนุมัติ' && !j.approved ? gateBox(j) : null,
       h('div', { class: 'row', style: 'margin-top:8px' },
+        h('button', { 'aria-pressed': String(fol), on: { click: () => toggleFollow(j) } }, fol ? '★ เลิกติดตาม' : '☆ ติดตาม'),
         h('button', { on: { click: () => { S.sel = j.id; S.mode = 'live'; S.liveStart = performance.now() / 1000; renderAll(); } } }, 'ดูบนเกาะ'),
         h('a', { class: 'btn', href: j.url, target: '_blank', rel: 'noopener' }, 'เปิดใน Notion'),
         j.link && h('a', { class: 'btn', href: j.link, target: '_blank', rel: 'noopener' }, 'ผลงาน')));
   }
-  function renderJobs() { const el = $('jobs'); el.replaceChildren(); if (!S.jobs.length) { el.append(h('div', { class: 'card muted' }, S.err ? 'ยังโหลดงานไม่ได้' : 'ยังไม่มีงานในกระดาน ให้บอก Claude ว่าจะเริ่มงานอะไร')); return; } S.jobs.forEach(j => el.append(jobCard(j))); }
+  function toggleFollow(j) { if (S.follow.has(j.id)) S.follow.delete(j.id); else S.follow.add(j.id); saveFollow(); renderAll(); }
+
+  /* ---------- panels ---------- */
+  function renderPending() {
+    const el = $('gate'); el.replaceChildren(); const w = S.jobs.filter(j => j.status === 'รอคุณอนุมัติ' && !j.approved); if (!w.length) { el.hidden = true; return; } el.hidden = false;
+    el.append(h('div', { class: 'gatebox' }, h('b', null, 'มี ' + w.length + ' งานรอคุณอนุมัติ'), ' ', h('button', { class: 'go', on: { click: () => { selectZone('z2', w[0].id); } } }, 'ไปที่งาน')));
+  }
+  function renderZone() {
+    const el = $('zonePanel'); el.replaceChildren(); if (!S.zone) { el.hidden = true; return; } el.hidden = false;
+    const z = ZONES[S.zone], js = jobsIn(S.zone).sort((a, b) => (b.status === 'รอคุณอนุมัติ') - (a.status === 'รอคุณอนุมัติ'));
+    const roles = S.zone === 'owner' ? 'เจ้าของ: อนุมัติด่านที่ 1 และสั่งงาน' : z.roles;
+    el.append(h('div', { class: 'card sel' },
+      h('div', { class: 'row', style: 'justify-content:space-between' }, h('h2', { style: 'margin:0' }, 'จุดนี้: ' + z.name), h('button', { 'aria-label': 'ปิดรายการจุดนี้', on: { click: () => { S.zone = null; renderAll(); } } }, '✕')),
+      h('p', { class: 'sub', style: 'margin:4px 0 8px' }, roles),
+      js.length ? h('div', { class: 'panel' }, js.map(jobCard)) : h('p', { class: 'muted' }, 'ยังไม่มีงานที่จุดนี้ตอนนี้'),
+      S.owner && S.mcp ? h('button', { on: { click: () => { S.formOpen = true; if (ZONE_TEAM[S.zone]) S.form.team = ZONE_TEAM[S.zone]; renderAll(); $('newJob').scrollIntoView({ block: 'nearest' }); } } }, '+ เพิ่มงานให้จุดนี้') : null));
+  }
+  function renderJobs() { const el = $('jobs'); el.replaceChildren(); if (!S.jobs.length) { el.append(h('div', { class: 'card muted' }, S.err ? 'ยังโหลดงานไม่ได้' : 'ยังไม่มีงานในกระดาน กด "+ สั่งงานใหม่" ด้านบน')); return; } [...S.jobs].sort((a, b) => (S.follow.has(b.id) - S.follow.has(a.id)) || (b.status === 'รอคุณอนุมัติ') - (a.status === 'รอคุณอนุมัติ')).forEach(j => el.append(jobCard(j))); }
   function renderTeams() {
-    const hot = new Set(S.jobs.map(j => STATUS_TEAM[j.status]).filter(Boolean)); const el = $('teams'); el.replaceChildren();
+    const hot = new Set(S.jobs.map(j => ZONE_TEAM[zoneOfJob(j)]).filter(Boolean)); const el = $('teams'); el.replaceChildren();
     TEAMS.forEach(t => el.append(h('div', { class: 'team' + (hot.has(t.n) ? ' hot' : '') }, h('b', null, t.n, hot.has(t.n) ? ' · มีงานอยู่' : ''), t.c.map(([n, s]) => h('div', { class: 'sub' }, n, ' — ', s)))));
   }
-  function renderGate() {
-    const el = $('gate'); el.replaceChildren(); const waiting = S.jobs.filter(j => j.status === 'รอคุณอนุมัติ' && !j.approved); if (!waiting.length) { el.hidden = true; return; } el.hidden = false;
-    waiting.forEach(j => {
-      const box = h('div', { class: 'gatebox' }, h('h2', null, 'ด่านที่ 1: รอคุณอนุมัติ'), h('div', null, h('b', null, j.title)),
-        h('p', { class: 'sub' }, 'อ่านสคริปต์ใน Notion ก่อน แล้วค่อยตัดสินใจ หลังอนุมัติ ทีมผลิตถึงจะเริ่มทำเสียงได้ (ใช้เครดิต ElevenLabs ของคุณ) ยังไม่มีอะไรถูกส่งออกหรือโพสต์'),
-        h('div', { class: 'row' }, h('a', { class: 'btn', href: j.url, target: '_blank', rel: 'noopener' }, 'อ่านสคริปต์ใน Notion')));
-      if (!S.owner) { box.append(h('p', { class: 'msg' }, 'เฉพาะเจ้าของหน้านี้กดอนุมัติได้')); }
-      else if (!S.mcp) { box.append(h('p', { class: 'msg err' }, 'เปิดหน้านี้ใน claude.ai เพื่อกดอนุมัติ (ต้องใช้ตัวต่อ Notion)')); }
-      else if (S.confirm && S.confirm.id === j.id) {
-        const isA = S.confirm.kind === 'approve'; const ta = isA ? null : h('textarea', { id: 'why', 'aria-label': 'ต้องการให้แก้อะไร', placeholder: 'ต้องการให้แก้อะไร (จำเป็น)' });
-        box.append(h('p', null, isA ? 'ยืนยัน: อนุมัติสคริปต์นี้ใช่ไหม' : 'ส่งกลับให้นักเขียนแก้'), ta,
-          h('div', { class: 'row' },
-            h('button', { class: isA ? 'go' : 'warn', disabled: S.busy, on: { click: () => decide(j, S.confirm.kind, ta ? ta.value.trim() : '') } }, S.busy ? 'กำลังบันทึก…' : isA ? 'ยืนยันอนุมัติ' : 'ส่งกลับให้แก้'),
-            h('button', { disabled: S.busy, on: { click: () => { S.confirm = null; renderGate(); } } }, 'ยกเลิก')));
-      } else {
-        box.append(h('div', { class: 'row' }, h('button', { class: 'go', on: { click: () => { S.confirm = { id: j.id, kind: 'approve' }; S.msg = null; renderGate(); } } }, 'อนุมัติสคริปต์'), h('button', { class: 'warn', on: { click: () => { S.confirm = { id: j.id, kind: 'revise' }; S.msg = null; renderGate(); } } }, 'ขอแก้ไข')));
-      }
-      if (S.msg) box.append(h('p', { class: 'msg ' + S.msg.k, role: 'status' }, S.msg.t));
-      el.append(box);
-    });
+  function renderFeed() { const c = $('feedCard'), l = $('feed'); l.replaceChildren(); if (!S.feed.length) { c.hidden = !S.follow.size; if (S.follow.size) l.append(h('li', { class: 'muted' }, 'กำลังติดตาม ' + S.follow.size + ' งาน จะแจ้งตรงนี้เมื่อสถานะขยับ (ตรวจทุก 30 วินาทีขณะเปิดหน้านี้)')); return; } c.hidden = false; S.feed.slice(0, 12).forEach(f => l.append(h('li', null, f.t, ' · ', f.title, ': ', f.from, ' → ', f.to))); }
+  function renderZbar() {
+    const bar = $('zbar'); bar.replaceChildren(); const ks = ['owner', 'z1', 'z2', 'z3', 'z4', 'z5', 'z6'];
+    ks.forEach(k => { const n = jobsIn(k).length; bar.append(h('button', { class: 'zbtn' + (S.zone === k ? ' on' : ''), 'aria-pressed': String(S.zone === k), on: { click: () => selectZone(k) } }, ZONES[k].name.replace(/^\d /, ''), n ? h('b', null, n) : null)); });
+  }
+  function renderForm() {
+    const el = $('newJob'); el.replaceChildren();
+    if (!S.formOpen) { put(el, h('div', { class: 'row', style: 'justify-content:space-between' }, h('b', null, 'สั่งงานใหม่ให้ทีม'), h('button', { class: 'go', disabled: !S.owner || !S.mcp, title: !S.owner ? 'เฉพาะเจ้าของ' : !S.mcp ? 'ต้องเปิดใน claude.ai' : '', on: { click: () => { S.formOpen = true; S.newMsg = null; renderAll(); } } }, '+ สั่งงานใหม่')), !S.owner ? h('p', { class: 'sub', style: 'margin:6px 0 0' }, 'เฉพาะเจ้าของหน้านี้สั่งงานได้') : null, S.newMsg ? h('p', { class: 'msg ' + S.newMsg.k, role: 'status' }, S.newMsg.t, ' ', S.newMsg.url ? h('a', { href: S.newMsg.url, target: '_blank', rel: 'noopener' }, 'เปิดใน Notion') : null) : null); return; }
+    const f = S.form;
+    const title = h('input', { type: 'text', id: 'fTitle', maxlength: 150, value: f.title, placeholder: 'เช่น รีล: 3 เครื่องมือตัดต่อที่ผมใช้' });
+    const team = h('select', { id: 'fTeam' }, Object.keys(TEAM_ZONE).map(t => h('option', { value: t, selected: t === f.team }, t)));
+    const st = h('select', { id: 'fStatus' }, ['คิวรอ', 'ค้นเทรนด์'].map(t => h('option', { value: t, selected: t === f.status }, t)));
+    const brief = h('textarea', { id: 'fBrief', maxlength: 2000, placeholder: 'หัวข้อ แนวทาง โทนเสียง ข้อห้าม ที่อยากให้ทีมรู้' }); brief.value = f.brief;
+    const due = h('input', { type: 'date', id: 'fDue', value: f.due });
+    const checks = h('div', { class: 'checks' }, CONNECTORS.map(c => { const cb = h('input', { type: 'checkbox', checked: f.conn.has(c), on: { change: () => { cb.checked ? f.conn.add(c) : f.conn.delete(c); } } }); return h('label', null, cb, c); }));
+    const sync = () => { f.title = title.value; f.team = team.value; f.status = st.value; f.brief = brief.value; f.due = due.value; };
+    [title, team, st, brief, due].forEach(x => x.addEventListener('input', sync));
+    put(el, h('h2', null, 'สั่งงานใหม่ → สร้างใน Notion'),
+      h('label', { for: 'fTitle' }, 'ชื่องาน (จำเป็น)'), title,
+      h('div', { class: 'row' }, h('div', { style: 'flex:1;min-width:140px' }, h('label', { for: 'fTeam' }, 'ทีมที่รับ'), team), h('div', { style: 'flex:1;min-width:140px' }, h('label', { for: 'fStatus' }, 'เริ่มที่'), st)),
+      h('label', { for: 'fBrief' }, 'บรีฟ'), brief,
+      h('label', { for: 'fDue' }, 'นัดโพสต์ (ไม่จำเป็น เป็นแค่ร่างในกระดาน ไม่สร้างนัดในปฏิทิน)'), due,
+      h('label', null, 'ตัวต่อที่อยากให้ใช้'), checks,
+      h('p', { class: 'sub' }, 'ทีมทำเป็นร่างเท่านั้น ไม่โพสต์หรือส่งออก และไม่เริ่มเสียง/วิดีโอจนกว่าคุณอนุมัติ'),
+      h('div', { class: 'row' }, h('button', { class: 'go', disabled: S.newBusy, on: { click: () => { sync(); createJob(); } } }, S.newBusy ? 'กำลังสร้าง…' : 'สร้างงานใน Notion'), h('button', { disabled: S.newBusy, on: { click: () => { S.formOpen = false; renderAll(); } } }, 'ปิด')),
+      S.newMsg ? h('p', { class: 'msg ' + S.newMsg.k, role: 'status' }, S.newMsg.t, ' ', S.newMsg.url ? h('a', { href: S.newMsg.url, target: '_blank', rel: 'noopener' }, 'เปิดใน Notion') : null) : null);
   }
   function renderNote() {
     const j = selJob(); const n = $('note'); const a = stepOf(j);
     if (S.mode === 'demo') n.textContent = 'โหมดสาธิต: ' + (STEPS[S.demo.cur].name) + ' — ' + STEPS[S.demo.cur].note;
-    else if (j) n.textContent = 'งานที่แสดงบนเกาะ: ' + j.title + ' · ' + j.status + (a === 3 ? ' (ตู้อนุมัติเรืองแสง รอคุณ)' : '');
-    else n.textContent = 'ยังไม่มีงานจริงให้แสดง จึงเล่นโหมดสาธิต';
+    else if (j) n.textContent = 'งานที่แสดงบนเกาะ: ' + j.title + ' · ' + j.status + (a === 3 ? ' (ตู้อนุมัติเรืองแสง รอคุณ)' : '') + ' · กดจุดบนเกาะเพื่อดูงานของจุดนั้น';
+    else n.textContent = 'กดจุดบนเกาะเพื่อดูงานของจุดนั้น · ยังไม่มีงานจริง จึงเล่นโหมดสาธิต';
   }
-  function renderAll() { renderErr(); renderGate(); renderJobs(); renderTeams(); renderNote(); $('mLive').className = S.mode === 'live' ? 'on' : ''; $('mDemo').className = S.mode === 'demo' ? 'on' : ''; $('mLive').setAttribute('aria-pressed', S.mode === 'live'); $('mDemo').setAttribute('aria-pressed', S.mode === 'demo'); $('demoCtl').hidden = S.mode !== 'demo'; }
+  function renderAll() { renderErr(); renderPending(); renderForm(); renderZone(); renderJobs(); renderFeed(); renderTeams(); renderZbar(); renderNote(); $('mLive').className = S.mode === 'live' ? 'on' : ''; $('mDemo').className = S.mode === 'demo' ? 'on' : ''; $('mLive').setAttribute('aria-pressed', S.mode === 'live'); $('mDemo').setAttribute('aria-pressed', S.mode === 'demo'); $('demoCtl').hidden = S.mode !== 'demo'; }
   function renderFresh() { $('fresh').textContent = S.storedAt ? 'อัปเดตจาก Notion ' + new Date(S.storedAt).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : (S.err ? 'ยังโหลดจาก Notion ไม่ได้' : 'กำลังโหลดงานจาก Notion…'); }
+  function selectZone(k, jobId) {
+    S.zone = k; const js = jobsIn(k); const pick = jobId ? js.find(j => j.id === jobId) : js[0]; if (pick) { S.sel = pick.id; S.mode = 'live'; S.liveStart = performance.now() / 1000; }
+    renderAll(); const zp = $('zonePanel'); try { if (innerWidth < 1000) zp.scrollIntoView({ block: 'start', behavior: 'smooth' }); } catch (e) { }
+  }
 
-  /* ---------- data: watch Notion ---------- */
+  /* ---------- data: watch Notion, detect moves of followed jobs ---------- */
   let unwatch = null;
   function onRows(ev) {
     if (ev.type === 'error') { S.err = ev.error; renderErr(); renderFresh(); return; }
-    S.err = null; const jobs = rowsOf(ev.result); S.jobs = jobs; S.storedAt = (ev.result.cache && ev.result.cache.storedAt) || Date.now();
+    S.err = null; const jobs = rowsOf(ev.result);
+    if (S.prev) { jobs.forEach(j => { const p = S.prev[j.id]; if (p && p !== j.status && S.follow.has(j.id)) S.feed.unshift({ t: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }), title: j.title, from: p, to: j.status }); }); }
+    S.prev = Object.fromEntries(jobs.map(j => [j.id, j.status]));
+    S.jobs = jobs; S.storedAt = (ev.result.cache && ev.result.cache.storedAt) || Date.now();
     if (!S.sel || !jobs.some(j => j.id === S.sel)) { S.sel = jobs.length ? jobs[0].id : null; S.liveStart = performance.now() / 1000; }
-    renderFresh(); renderAll();
+    renderFresh(); if (S.formOpen || S.confirm) { renderFeed(); renderZbar(); return; } renderAll();
   }
   function startWatch(refresh) { if (!S.mcp) return; try { unwatch && unwatch(); } catch (e) { } S.err = null; if (refresh) { try { S.mcp.invalidate(SRV, TOOL_Q).catch(() => { }); } catch (e) { } } unwatch = S.mcp.watchTool(SRV, TOOL_Q, QUERY, onRows, { refetchInterval: 30000 }); }
   async function askPerm() { try { const p = await claude.use('permissions'); await p.request(['mcp:' + SRV]); } catch (e) { } startWatch(true); }
 
   /* ---------- decisions: write Notion as the viewer, log in db ---------- */
   async function decide(job, kind, reason) {
-    if (S.busy) return; if (kind === 'revise' && !reason) { S.msg = { k: 'err', t: 'ใส่เหตุผลที่ต้องแก้ก่อน' }; renderGate(); return; }
-    S.busy = true; S.msg = null; renderGate();
+    if (S.busy) return; if (kind === 'revise' && !reason) { S.msg = { k: 'err', t: 'ใส่เหตุผลที่ต้องแก้ก่อน', id: job.id }; renderAll(); return; }
+    S.busy = true; S.msg = null; renderAll();
     try {
       const fresh = await S.mcp.callTool(SRV, TOOL_Q, QUERY, { cache: { refresh: true, staleTime: 0, gcTime: 1000 } });
       const cur = rowsOf(fresh).find(x => x.id === job.id);
-      if (!cur || cur.status !== 'รอคุณอนุมัติ') { S.msg = { k: 'err', t: 'สถานะงานนี้เปลี่ยนไปแล้ว (ตอนนี้: ' + (cur ? cur.status : 'ไม่พบ') + ') จึงไม่ได้บันทึก' }; S.confirm = null; startWatch(true); return; }
+      if (!cur || cur.status !== 'รอคุณอนุมัติ') { S.msg = { k: 'err', id: job.id, t: 'สถานะงานนี้เปลี่ยนไปแล้ว (ตอนนี้: ' + (cur ? cur.status : 'ไม่พบ') + ') จึงไม่ได้บันทึก' }; S.confirm = null; startWatch(true); return; }
       const props = kind === 'approve'
         ? { 'คุณอนุมัติแล้ว': '__YES__', 'สถานะ': 'อนุมัติแล้ว', 'ความคืบหน้า': 0.6, 'โน้ตทีม': 'เจ้าของอนุมัติสคริปต์แล้ว (กดจากแดชบอร์ด) ทีมผลิตเริ่มได้ ยังไม่ได้ส่งออก' }
         : { 'คุณอนุมัติแล้ว': '__NO__', 'สถานะ': 'เขียนสคริป', 'ความคืบหน้า': 0.3, 'โน้ตทีม': 'เจ้าของขอแก้: ' + reason };
       await S.mcp.callTool(SRV, TOOL_U, { page_id: job.url, command: 'update_properties', properties: props }, { cache: false });
-      S.msg = { k: 'ok', t: kind === 'approve' ? 'บันทึกการอนุมัติลง Notion แล้ว บอก Claude ในแชตว่า "อนุมัติแล้ว" เพื่อให้ทีมผลิตเริ่มทำเสียง' : 'ส่งกลับให้นักเขียนแก้แล้ว' };
+      S.msg = { k: 'ok', id: job.id, t: kind === 'approve' ? 'บันทึกการอนุมัติลง Notion แล้ว บอก Claude ในแชตว่า "อนุมัติแล้ว" เพื่อให้ทีมผลิตเริ่มทำเสียง' : 'ส่งกลับให้นักเขียนแก้แล้ว' };
       S.confirm = null;
       if (S.db) { try { await S.db.doc('approvals/' + job.id + '-' + Date.now()).set({ job: job.title, jobId: job.id, decision: kind, reason: reason || '', by: S.uid || null, at: Date.now() }); } catch (e) { S.msg.t += ' (บันทึกประวัติในหน้านี้ไม่สำเร็จ แต่ Notion อัปเดตแล้ว)'; } }
       startWatch(true);
     } catch (e) {
       const amb = e && (e.code === 'server_unavailable' || e.code === 'upstream_error');
-      S.msg = { k: 'err', t: errText(e) + (amb ? ' อาจบันทึกไปแล้ว ตรวจใน Notion ก่อนกดซ้ำ' : '') };
-      if (e && ['approval_required', 'not_in_manifest', 'consent_required'].includes(e.code)) S.err = e;
-    } finally { S.busy = false; renderErr(); renderGate(); }
+      S.msg = { k: 'err', id: job.id, t: errText(e) + (amb ? ' อาจบันทึกไปแล้ว ตรวจใน Notion ก่อนกดซ้ำ' : '') };
+      if (needsPerm(e)) S.err = e;
+    } finally { S.busy = false; renderAll(); }
+  }
+
+  /* ---------- new job: create a row in the Notion board ---------- */
+  async function createJob() {
+    if (S.newBusy) return; const f = S.form, title = f.title.trim();
+    if (!title) { S.newMsg = { k: 'err', t: 'ใส่ชื่องานก่อน' }; renderForm(); return; }
+    if (S.jobs.some(j => j.title.trim() === title)) { S.newMsg = { k: 'err', t: 'มีงานชื่อนี้ในกระดานแล้ว เปลี่ยนชื่อ หรือเปิดงานเดิมแทน' }; renderForm(); return; }
+    S.newBusy = true; S.newMsg = null; renderForm();
+    const props = { 'งาน': title, 'สถานะ': f.status, 'ทีม': f.team, 'ความคืบหน้า': f.status === 'ค้นเทรนด์' ? 0.05 : 0, 'คุณอนุมัติแล้ว': '__NO__', 'ตัวต่อที่ใช้': JSON.stringify([...f.conn]), 'ผู้รับผิดชอบ (บทบาท)': 'รอทีมรับงาน', 'โน้ตทีม': 'เจ้าของสั่งงานผ่านแดชบอร์ด ทีมทำเป็นร่างเท่านั้น ยังไม่ส่งออก' };
+    if (f.due) { props['date:นัดโพสต์:start'] = f.due; props['date:นัดโพสต์:is_datetime'] = 0; }
+    const content = '## บรีฟ\n- สั่งงานจาก: แดชบอร์ดออฟฟิศ (เจ้าของ)\n- กฎ: ทีมทำเป็นร่างเท่านั้น ห้ามโพสต์หรือส่งออก ห้ามเริ่มทำเสียง/วิดีโอก่อนเจ้าของติ๊ก "คุณอนุมัติแล้ว"\n' + (f.brief.trim() ? '\n' + f.brief.trim() + '\n' : '') + '\n## บันทึกของทีม\n';
+    try {
+      const r = await S.mcp.callTool(SRV, TOOL_C, { parent: { type: 'data_source_id', data_source_id: DS_ID }, pages: [{ properties: props, content }] }, { cache: false });
+      const pg = r && r.payload && Array.isArray(r.payload.pages) ? r.payload.pages[0] : null;
+      S.newMsg = { k: 'ok', t: 'สร้างงานใน Notion แล้ว บอก Claude ในแชตให้ทีมรับงาน (หน้านี้แจ้ง Claude เองไม่ได้)', url: pg && pg.url };
+      S.form = { title: '', team: f.team, status: 'คิวรอ', brief: '', due: '', conn: new Set(['Notion']) }; S.formOpen = false; startWatch(true);
+    } catch (e) {
+      const amb = e && (e.code === 'server_unavailable' || e.code === 'upstream_error');
+      S.newMsg = { k: 'err', t: errText(e) + (amb ? ' อาจสร้างไปแล้ว ตรวจใน Notion ก่อนกดซ้ำ จะได้ไม่ซ้ำ' : '') }; if (needsPerm(e)) S.err = e;
+    } finally { S.newBusy = false; renderAll(); }
   }
   function startLog() {
-    if (!S.db) return; let timer = setTimeout(() => { const l = $('log'); if (l.firstChild && l.firstChild.className === 'muted') l.firstChild.textContent = 'ยังโหลดประวัติไม่ได้'; }, 10000);
+    if (!S.db) return; const timer = setTimeout(() => { const l = $('log'); if (l.firstChild && l.firstChild.className === 'muted') l.firstChild.textContent = 'ยังโหลดประวัติไม่ได้'; }, 10000);
     S.db.collection('approvals').orderBy('at', 'desc').limit(20).onSnapshot(snap => {
       clearTimeout(timer); const l = $('log'); l.replaceChildren(); if (snap.empty) { l.append(h('li', { class: 'muted' }, 'ยังไม่มีการตัดสินใจ')); return; }
       snap.docs.forEach(d => { const x = d.data() || {}; l.append(h('li', null, new Date(x.at || 0).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' }), ' · ', x.decision === 'approve' ? 'อนุมัติ' : 'ขอแก้', ' · ', String(x.job || ''), x.reason ? ' — ' + String(x.reason) : '')); });
-    }, () => { clearTimeout(timer); }); }
+    }, () => { clearTimeout(timer); });
+  }
 
-  /* ---------- island player ---------- */
+  /* ---------- island player + click hit-testing ---------- */
   const cv = $('cv'), g = cv.getContext('2d'); const cache = new Map();
   function layer(b) { const key = b + ':' + S.px; if (cache.has(key)) return cache.get(key); const c = document.createElement('canvas'); c.width = c.height = S.px; const cg = c.getContext('2d'); cg.scale(S.px / 1000, S.px / 1000); BOIL = b; buildStatic(cg); cache.set(key, c); while (cache.size > 6) cache.delete(cache.keys().next().value); return c; }
-  function draw(T, t, si, cyc, live) { const b = Math.floor(T * 5) % 3; BOIL = b; g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(layer(b), 0, 0); const k = S.px / 1000; g.setTransform(k, 0, 0, k, 0, 0); BOIL = b; drawDynamic(g, { T, t, si, cycle: cyc, live: !!live, posted: S.jobs.filter(j => j.status === 'โพสต์แล้ว').length }); }
+  function ring(T) {
+    if (!S.zone) return; const hit = HIT.find(x => x.k === S.zone && x.k !== 'z2') || HIT.find(x => x.k === S.zone); if (!hit) return;
+    seed('selring'); g.save(); g.globalAlpha = .75 + .2 * Math.sin(T * 4); line(g, ell(hit.x, hit.y, hit.rx + 6, hit.ry + 6, 44), { closed: true, w: 3.2, color: C.thread, passes: 2 }); g.restore();
+  }
+  function draw(T, t, si, cyc, live) { const b = Math.floor(T * 5) % 3; BOIL = b; g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(layer(b), 0, 0); const k = S.px / 1000; g.setTransform(k, 0, 0, k, 0, 0); BOIL = b; drawDynamic(g, { T, t, si, cycle: cyc, live: !!live, posted: S.jobs.filter(j => j.status === 'โพสต์แล้ว').length }); ring(T); }
   const STEP_DUR = 3.8, SPEEDS = [1, 1.5, 2, 3];
   function frame(now) {
     const T = now / 1000; const j = selJob(); const a = stepOf(j);
@@ -664,6 +767,9 @@ function drawDynamic(ctx, S) {
     requestAnimationFrame(frame);
   }
   function demoGo(i) { const d = S.demo; if (i >= STEPS.length) { i = 0; d.cycle = (d.cycle + 1) % 3; } if (i < 0) i = STEPS.length - 1; d.cur = i; d.start = performance.now() / 1000; renderNote(); }
+  function hitAt(ev) { const r = cv.getBoundingClientRect(), x = (ev.clientX - r.left) * 1000 / r.width, y = (ev.clientY - r.top) * 1000 / r.height; for (const z of HIT) { const dx = (x - z.x) / z.rx, dy = (y - z.y) / z.ry; if (dx * dx + dy * dy <= 1) return z.k; } return null; }
+  cv.addEventListener('pointermove', ev => { cv.classList.toggle('hot', !!hitAt(ev)); });
+  cv.addEventListener('click', ev => { const k = hitAt(ev); if (k) selectZone(k); });
   function resize() { const w = $('cv').parentElement.clientWidth || 600, dpr = Math.min(2, window.devicePixelRatio || 1); const px = Math.max(320, Math.round(w * dpr)); if (px !== S.px) { S.px = px; cv.width = cv.height = px; } }
   addEventListener('resize', resize);
   $('mLive').onclick = () => { S.mode = 'live'; S.liveStart = performance.now() / 1000; renderAll(); };
