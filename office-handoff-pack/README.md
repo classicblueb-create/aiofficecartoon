@@ -12,7 +12,7 @@
 | `models/` | โมเดล TLA+ 7 ตัว + ไฟล์ตั้งค่า TLC (ดู `models/README.md`) |
 | `art/office.ts`, `art/officeKit.ts` | โค้ดวาดออฟฟิศเวอร์ชันเอนจิน lainsen (ต้องมีเอนจินนั้นก่อน ดูหมายเหตุ) |
 | `previews/` | ภาพที่ได้จากแชต (v1 ดินสอสี, v2 โทนต้นฉบับ) |
-| `web/` | หน้าเว็บ 3 หน้าที่สร้างในแชต (เปิดในเบราว์เซอร์ได้เลย) |
+| `web/` | หน้าเว็บที่สร้างในแชต (เปิดในเบราว์เซอร์ได้เลย) รวม `office-island-animated.html` เกาะลอยเคลื่อนไหว 8 ก้าวตาม W6 |
 
 หน้าที่ publish ไว้แล้ว:
 - Field notes แบบไอโซเมตริก 5 โลก: https://claude.ai/artifact/PvCzoKcKodtM8rH6dDu3pP
