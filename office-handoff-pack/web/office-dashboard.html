@@ -1,0 +1,689 @@
+<title>ออฟฟิศ modty</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,400;0,700;1,400&display=swap">
+<style>
+/* layout: island canvas on the left, work panel on the right; stacks on phones. palette from BRIEF.md */
+:root{--bg:#ece6d8;--paper:#f5f1e6;--card:#fbf8f1;--ink:#1d1a1e;--muted:#6b6258;--line:#d8cfbc;--thread:#ac4f40;--ok:#4f7a3d;--warn:#b86a1c;--bad:#a8443b;--info:#2f6f98;--chip:#efe7d6;--font:"Sarabun","Noto Sans Thai",system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1a1718;--card:#252122;--ink:#f1ebe0;--muted:#b3a99b;--line:#3b3537;--thread:#e08b7d;--ok:#9dbb86;--warn:#e0b04f;--bad:#e8837a;--info:#8cc0e0;--chip:#312b2d;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1a1718;--card:#252122;--ink:#f1ebe0;--muted:#b3a99b;--line:#3b3537;--thread:#e08b7d;--ok:#9dbb86;--warn:#e0b04f;--bad:#e8837a;--info:#8cc0e0;--chip:#312b2d;color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.5;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px}
+*{box-sizing:border-box}
+.wrap{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
+@media(min-width:1000px){.wrap{grid-template-columns:minmax(0,1fr) 420px;align-items:start}}
+h1{font-size:20px;margin:0}
+h2{font-size:16px;margin:0 0 8px}
+.top{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;justify-content:space-between}
+.sub{color:var(--muted);font-size:13px}
+.stage{background:#f5f1e6;color:#1d1a1e;border:1px solid var(--line);box-shadow:0 2px 0 var(--line);line-height:0;min-width:0}
+.stage canvas{display:block;width:100%;height:auto}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+button,.btn{font:inherit;font-size:14px;color:var(--ink);background:var(--card);border:2px solid var(--ink);border-radius:6px 9px 5px 8px;padding:5px 12px;cursor:pointer;box-shadow:2px 2px 0 rgba(172,79,64,.45);text-decoration:none;display:inline-block}
+button:hover:not(:disabled){background:var(--chip)}
+button:disabled{opacity:.5;cursor:not-allowed}
+button:focus-visible,a:focus-visible,textarea:focus-visible{outline:3px solid var(--info);outline-offset:2px}
+button.on{background:var(--ink);color:var(--card)}
+button.go{background:var(--ok);color:#fff;border-color:var(--ink)}
+button.warn{border-color:var(--warn)}
+.note{flex-basis:100%;font-style:italic;font-size:14px;min-height:21px;color:var(--ink)}
+.panel{display:grid;gap:14px;min-width:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;min-width:0}
+.card.sel{border:2px solid var(--ink)}
+.card h3{font-size:15px;margin:0 0 4px;overflow-wrap:anywhere}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.chip{font-size:12px;background:var(--chip);border:1px solid var(--line);border-radius:999px;padding:1px 9px;white-space:nowrap}
+.chip.gate{border-color:var(--warn);color:var(--warn);font-weight:700}
+.chip.ok{border-color:var(--ok);color:var(--ok)}
+.chip.bad{border-color:var(--bad);color:var(--bad)}
+.chip.info{border-color:var(--info);color:var(--info)}
+.meter{height:10px;border-radius:6px;background:var(--chip);border:1px solid var(--line);overflow:hidden;margin:8px 0 4px}
+.meter>i{display:block;height:100%;background:var(--thread);transition:width .5s}
+.pct{font-size:12px;color:var(--muted);display:flex;justify-content:space-between}
+.steps{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:3px;margin-top:8px}
+.steps span{font-size:10px;line-height:1.2;text-align:center;color:var(--muted);border-top:4px solid var(--line);padding-top:3px;overflow-wrap:anywhere}
+.steps span.done{border-color:var(--ok);color:var(--ink)}
+.steps span.cur{border-color:var(--thread);color:var(--ink);font-weight:700}
+.steps span.gate{border-style:dashed}
+.gatebox{border:2px dashed var(--warn);border-radius:10px;padding:12px 14px;background:var(--card)}
+.gatebox p{margin:4px 0 8px}
+textarea{width:100%;min-height:64px;font:inherit;font-size:14px;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px 8px;resize:vertical}
+.msg{font-size:13px;margin:6px 0 0;overflow-wrap:anywhere}
+.msg.err{color:var(--bad)}.msg.ok{color:var(--ok)}
+.banner{border:1px solid var(--bad);color:var(--bad);border-radius:8px;padding:8px 12px;font-size:14px}
+.teams{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.team{border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;min-width:0}
+.team b{display:block;font-size:14px}
+.team.hot{border:2px solid var(--thread)}
+.log{font-size:13px;display:grid;gap:4px;margin:0;padding:0;list-style:none}
+.muted{color:var(--muted)}
+.credit{grid-column:1/-1;font-size:12px;color:var(--muted);text-align:center;line-height:1.5}
+a{color:var(--info)}
+@media (prefers-reduced-motion:reduce){.meter>i{transition:none}}
+</style>
+<div class="wrap">
+ <header class="top">
+  <h1>ออฟฟิศทีมช่วยงาน · modty.ai</h1>
+  <span class="sub" id="fresh">กำลังโหลดงานจาก Notion…</span>
+ </header>
+ <main>
+  <div class="stage"><canvas id="cv" aria-label="เกาะลอยออฟฟิศ 6 โซน แสดงตำแหน่งของงานที่เลือก"></canvas></div>
+  <div class="bar" role="group" aria-label="ควบคุมภาพเกาะ">
+   <button id="mLive" class="on" aria-pressed="true">ตามงานจริง</button>
+   <button id="mDemo" aria-pressed="false">สาธิตวนเอง</button>
+   <span id="demoCtl" hidden>
+    <button id="prev" title="ก้าวก่อน">◀</button><button id="play" title="เล่น/หยุด">❚❚</button><button id="next" title="ถัดไป">▶</button><button id="speed">⚡ 1×</button>
+   </span>
+   <div class="note" id="note" aria-live="polite"></div>
+  </div>
+ </main>
+ <aside class="panel" aria-label="แผงงาน">
+  <div id="errBox" hidden></div>
+  <section id="gate" hidden></section>
+  <section><h2>งานของทีม</h2><div id="jobs" class="panel"></div></section>
+  <section><h2>ทีมกับตัวต่อ</h2><div id="teams" class="teams"></div></section>
+  <section class="card"><h2>บันทึกการตัดสินใจ</h2><ul id="log" class="log"><li class="muted">ยังไม่มีการตัดสินใจ</li></ul></section>
+ </aside>
+ <p class="credit">ภาพหุ่นจำลอง · สถานะอ่านจาก Notion กระดาน "งานของทีมออฟฟิศ" ผ่านบัญชีของผู้เปิดหน้านี้ · ก้าวตามโมเดล W6.tla (ผล TLC ตามบันทึกใน models/README.md ยังไม่ได้รันซ้ำ หน้านี้ไม่ได้ตรวจกฎเอง) · เอนจินลายเส้นดัดแปลงจากตัวอย่าง "the making of nhang" · สไตล์อ้างอิง statechart-art (Kevin T. Ngo, MIT) และ Field Notes (April Zhu) · ฟอนต์ Sarabun (OFL)</p>
+</div>
+<script>
+
+/* ===== crayon engine (seeded, jittered, hatched) ===== */
+const TAU = Math.PI * 2, PI = Math.PI;
+const C = {
+  ink: '#1d1a1e', thread: '#ac4f40', paper: '#f5f1e6',
+  mint: '#c0dfcf', pink: '#f1bdc5', blue: '#c4dae7', rose: '#d97581', sage: '#9dbb86', sageD: '#6f9460', lilac: '#c6b6de',
+  gold: '#e0b04f', beige: '#dcc59c', slate: '#93aabe', wood: '#c79d6d', woodD: '#9c7148', face: '#fbf1e4', cheek: '#f2a9b6',
+  ticket: '#fbf8f1', pinG: '#dfb456', pinB: '#4485b0', pinR: '#cc5548', white: '#fdfcf8', steel: '#bcc5ca', sky: '#dcebf1'
+};
+function hashStr(s) { let h = 2166136261 >>> 0; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+function mulberry(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+let R = Math.random, BOIL = 0;
+function seed(id) { R = mulberry(hashStr(String(id)) + BOIL * 7919); }
+const rnd = (a = 0, b = 1) => a + (b - a) * R();
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const ease = t => t < 0 ? 0 : t > 1 ? 1 : t * t * (3 - 2 * t);
+const easeOutBack = t => { t = clamp(t); const c = 1.7; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); };
+
+const _pat = {};
+function grain(color, holes = 0.42) {
+  const k = color + holes; if (_pat[k]) return _pat[k];
+  const c = document.createElement('canvas'); c.width = c.height = 96; const g = c.getContext('2d');
+  g.fillStyle = color; g.fillRect(0, 0, 96, 96); g.globalCompositeOperation = 'destination-out';
+  const r = mulberry(hashStr(k));
+  for (let i = 0; i < 96 * 96 * holes; i++) { g.globalAlpha = r() * 0.95; g.fillRect(r() * 96 | 0, r() * 96 | 0, r() < .2 ? 2 : 1, 1); }
+  const p = document.createElement('canvas').getContext('2d').createPattern(c, 'repeat'); try { p.setTransform(new DOMMatrix().scale(0.62)); } catch (e) { }
+  return (_pat[k] = p);
+}
+function resample(pts, step, closed) {
+  const P = closed ? pts.concat([pts[0]]) : pts, out = [];
+  for (let i = 0; i < P.length - 1; i++) { const a = P[i], b = P[i + 1], d = Math.hypot(b[0] - a[0], b[1] - a[1]), n = Math.max(1, Math.ceil(d / step)); for (let k = 0; k < n; k++) out.push([a[0] + (b[0] - a[0]) * k / n, a[1] + (b[1] - a[1]) * k / n]); }
+  if (!closed) out.push(P[P.length - 1]); return out;
+}
+function jitter(P, amp) {
+  const p1 = rnd(0, TAU), p2 = rnd(0, TAU), q1 = rnd(0, TAU), q2 = rnd(0, TAU), f1 = rnd(.05, .1), f2 = rnd(.18, .32);
+  return P.map((p, i) => [p[0] + amp * (Math.sin(i * f1 + p1) * .7 + Math.sin(i * f2 + p2) * .3 + rnd(-.25, .25)), p[1] + amp * (Math.sin(i * f1 + q1) * .7 + Math.sin(i * f2 + q2) * .3 + rnd(-.25, .25))]);
+}
+const ell = (cx, cy, rx, ry, n = 36, a0 = 0, a1 = TAU, rot = 0) => { const o = []; const full = Math.abs(a1 - a0 - TAU) < 1e-6; for (let i = 0; i < n; i++) { const a = a0 + (a1 - a0) * i / (full ? n : n - 1); const x = Math.cos(a) * rx, y = Math.sin(a) * ry; o.push([cx + x * Math.cos(rot) - y * Math.sin(rot), cy + x * Math.sin(rot) + y * Math.cos(rot)]); } return o; };
+const rectP = (x, y, w, h) => [[x, y], [x + w, y], [x + w, y + h], [x, y + h]];
+function bez(p0, p1, p2, p3, n = 16) { const o = []; for (let i = 0; i <= n; i++) { const t = i / n, u = 1 - t; o.push([u * u * u * p0[0] + 3 * u * u * t * p1[0] + 3 * u * t * t * p2[0] + t * t * t * p3[0], u * u * u * p0[1] + 3 * u * u * t * p1[1] + 3 * u * t * t * p2[1] + t * t * t * p3[1]]); } return o; }
+function qbez(p0, p1, p2, n = 12) { const o = []; for (let i = 0; i <= n; i++) { const t = i / n, u = 1 - t; o.push([u * u * p0[0] + 2 * u * t * p1[0] + t * t * p2[0], u * u * p0[1] + 2 * u * t * p1[1] + t * t * p2[1]]); } return o; }
+function smoothPts(pts, iter = 2, closed = true) { let P = pts; for (let k = 0; k < iter; k++) { const o = []; const n = P.length; for (let i = 0; i < (closed ? n : n - 1); i++) { const a = P[i], b = P[(i + 1) % n]; o.push([a[0] * .75 + b[0] * .25, a[1] * .75 + b[1] * .25], [a[0] * .25 + b[0] * .75, a[1] * .25 + b[1] * .75]); } if (!closed) { o.unshift(P[0]); o.push(P[n - 1]); } P = o; } return P; }
+function roundCorners(pts, r = 14) {
+  if (pts.length < 3) return pts; const o = [pts[0]];
+  for (let i = 1; i < pts.length - 1; i++) { const a = pts[i - 1], b = pts[i], c = pts[i + 1]; const d1 = Math.hypot(b[0] - a[0], b[1] - a[1]), d2 = Math.hypot(c[0] - b[0], c[1] - b[1]); const rr = Math.min(r, d1 / 2, d2 / 2); const p = [b[0] + (a[0] - b[0]) * rr / d1, b[1] + (a[1] - b[1]) * rr / d1], q = [b[0] + (c[0] - b[0]) * rr / d2, b[1] + (c[1] - b[1]) * rr / d2]; o.push(...qbez(p, b, q, 6)); }
+  o.push(pts[pts.length - 1]); return o;
+}
+function capsule(pl, w, w2) {
+  const n = pl.length, L = [], Rr = []; if (w2 == null) w2 = w; let n0, nE;
+  for (let i = 0; i < n; i++) { const a = pl[Math.max(0, i - 1)], b = pl[Math.min(n - 1, i + 1)]; let tx = b[0] - a[0], ty = b[1] - a[1]; const d = Math.hypot(tx, ty) || 1; tx /= d; ty /= d; const hw = lerp(w, w2, i / (n - 1)) / 2, nx = -ty, ny = tx; L.push([pl[i][0] + nx * hw, pl[i][1] + ny * hw]); Rr.push([pl[i][0] - nx * hw, pl[i][1] - ny * hw]); if (i === 0) n0 = Math.atan2(ny, nx); if (i === n - 1) nE = Math.atan2(ny, nx); }
+  const capE = [], capS = [], pe = pl[n - 1], ps = pl[0];
+  for (let k = 1; k < 7; k++) { const a = nE - PI * k / 7; capE.push([pe[0] + Math.cos(a) * w2 / 2, pe[1] + Math.sin(a) * w2 / 2]); }
+  for (let k = 1; k < 7; k++) { const a = n0 + PI - PI * k / 7; capS.push([ps[0] + Math.cos(a) * w / 2, ps[1] + Math.sin(a) * w / 2]); }
+  return L.concat(capE, Rr.reverse(), capS);
+}
+function bbox(pts) { let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; for (const p of pts) { if (p[0] < x0) x0 = p[0]; if (p[0] > x1) x1 = p[0]; if (p[1] < y0) y0 = p[1]; if (p[1] > y1) y1 = p[1]; } return { x0, y0, x1, y1, w: x1 - x0, h: y1 - y0, cx: (x0 + x1) / 2, cy: (y0 + y1) / 2 }; }
+function pathOf(pts) { const p = new Path2D(); pts.forEach((q, i) => i ? p.lineTo(q[0], q[1]) : p.moveTo(q[0], q[1])); p.closePath(); return p; }
+const tr = (pts, dx, dy, s = 1) => pts.map(p => [p[0] * s + dx, p[1] * s + dy]);
+const rot = (pts, cx, cy, a) => pts.map(p => { const x = p[0] - cx, y = p[1] - cy; return [cx + x * Math.cos(a) - y * Math.sin(a), cy + x * Math.sin(a) + y * Math.cos(a)]; });
+
+function line(ctx, pts, o = {}) {
+  const color = o.color || C.ink, w = o.w || 2.4, amp = o.amp ?? 1.0, closed = !!o.closed;
+  let P = resample(pts, 4, closed);
+  if (closed) P = P.concat(P.slice(1, Math.min(P.length, 3 + (rnd() * 5 | 0))));
+  if (o.progress != null && o.progress < 1) { if (o.progress <= 0) return P; P = P.slice(0, Math.max(2, Math.ceil(P.length * o.progress))); }
+  ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = grain(color, o.holes ?? .3);
+  const passes = o.passes || 2;
+  for (let k = 0; k < passes; k++) {
+    const J = jitter(P, amp * (k ? 1.5 : 1)); const ph = rnd(0, TAU); ctx.globalAlpha = (o.alpha ?? 1) * (k ? .5 : .95); const ch = 10;
+    for (let s = 0; s < J.length - 1; s += ch) { ctx.lineWidth = w * (k ? .55 : 1) * (.78 + .38 * (0.5 + 0.5 * Math.sin(s * .07 + ph))); ctx.beginPath(); ctx.moveTo(J[s][0], J[s][1]); for (let i = s + 1; i <= Math.min(J.length - 1, s + ch); i++) ctx.lineTo(J[i][0], J[i][1]); ctx.stroke(); }
+  }
+  ctx.restore(); return P;
+}
+function hatch(ctx, pts, o = {}) {
+  const color = o.color || C.ink, b = bbox(pts), path = o.path || pathOf(pts);
+  ctx.save(); ctx.clip(path);
+  if (o.solid) { ctx.fillStyle = o.solid; ctx.fill(path); }
+  if (o.base !== 0) { ctx.globalAlpha = o.base ?? .5; ctx.fillStyle = grain(color, .5); ctx.fill(path); }
+  const layers = o.layers || [{}];
+  for (const Ly of layers) {
+    const col = Ly.color || color, gap = Ly.gap || o.gap || 3.6, ang = (Ly.angle ?? o.angle ?? -1.05) + rnd(-.08, .08);
+    const dx = Math.cos(ang), dy = Math.sin(ang), nx = -dy, ny = dx, L = Math.hypot(b.w, b.h) / 2 + 6;
+    ctx.strokeStyle = grain(col, .35); ctx.lineCap = 'round';
+    for (let d = -L; d < L; d += gap * rnd(.65, 1.35)) {
+      ctx.globalAlpha = rnd(.45, .95) * (Ly.alpha ?? o.alpha ?? 1); ctx.lineWidth = (Ly.w || o.w || 1.9) * rnd(.7, 1.3);
+      const ox = b.cx + nx * d, oy = b.cy + ny * d; let t = -L - rnd(0, 12); ctx.beginPath();
+      while (t < L) { const t2 = Math.min(L, t + rnd(20, 140)), wob = rnd(-1.6, 1.6); ctx.moveTo(ox + dx * t, oy + dy * t); ctx.quadraticCurveTo(ox + dx * (t + t2) / 2 + nx * wob, oy + dy * (t + t2) / 2 + ny * wob, ox + dx * t2, oy + dy * t2); t = t2 + (rnd() < .5 ? rnd(0, 7) : 0); }
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+function radial(ctx, pts, hx, hy, o = {}) {
+  const b = bbox(pts), path = pathOf(pts), Rm = Math.hypot(Math.max(Math.abs(b.x0 - hx), Math.abs(b.x1 - hx)), Math.max(Math.abs(b.y0 - hy), Math.abs(b.y1 - hy))) + 4;
+  ctx.save(); ctx.clip(path); if (o.solid) { ctx.fillStyle = o.solid; ctx.fill(path); } ctx.globalAlpha = o.base ?? .6; ctx.fillStyle = grain(o.color, .5); ctx.fill(path);
+  const cols = o.cols || [o.color], n = o.n || 60, a0 = o.a0 ?? -PI, a1 = o.a1 ?? 0; ctx.lineCap = 'round';
+  for (let i = 0; i < n; i++) { const a = a0 + (a1 - a0) * (i + rnd(-.4, .4)) / n, r0 = rnd(0, Rm * (o.inner ?? .1)), r1 = Rm * rnd(.75, 1.05); ctx.strokeStyle = grain(cols[(rnd() * cols.length) | 0], .35); ctx.globalAlpha = rnd(.5, 1); ctx.lineWidth = (o.w || 1.8) * rnd(.7, 1.4); const bend = rnd(-.04, .04); ctx.beginPath(); ctx.moveTo(hx + Math.cos(a) * r0, hy + Math.sin(a) * r0); ctx.quadraticCurveTo(hx + Math.cos(a + bend) * r1 * .5, hy + Math.sin(a + bend) * r1 * .5, hx + Math.cos(a) * r1, hy + Math.sin(a) * r1); ctx.stroke(); }
+  ctx.restore();
+}
+function shape(ctx, pts, o = {}) {
+  if (o.fill) { if (o.radial) radial(ctx, pts, o.radial[0], o.radial[1], Object.assign({ color: o.fill, solid: o.solid }, o.r || {})); else hatch(ctx, pts, Object.assign({ color: o.fill, solid: o.solid }, o.h || {})); }
+  if (o.stroke !== null) line(ctx, pts, { color: o.stroke || C.ink, w: o.w || 2.2, closed: !o.open, amp: o.amp, alpha: o.alpha, passes: o.passes });
+}
+function dot(ctx, x, y, r, fill, o = {}) { shape(ctx, ell(x, y, r, r, Math.max(10, r * 2 | 0)), Object.assign({ fill, w: o.w || 2, solid: o.solid, h: { gap: 2.4, base: .7 } }, o)); }
+const FONT_T = '"Sarabun","Courier New",monospace';
+function txt(ctx, s, x, y, o = {}) {
+  ctx.save(); ctx.font = o.font || `700 22px ${FONT_T}`; ctx.textAlign = o.align || 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = grain(o.color || C.ink, o.holes ?? .16); ctx.globalAlpha = o.alpha ?? 1;
+  let str = s; if (o.chars != null) str = s.slice(0, Math.max(0, Math.floor(o.chars)));
+  ctx.fillText(str, x, y); if (o.double) { ctx.globalAlpha *= .35; ctx.fillText(str, x + .7, y + .4); } ctx.restore();
+}
+function label(ctx, s, x, y, o = {}) {
+  const size = o.size || 17, lh = o.lh || size * 1.25; ctx.save(); ctx.font = `italic ${size}px ${FONT_T}`; let used = 0; const total = o.chars ?? 1e9;
+  s.split('\n').forEach((ln, li) => {
+    const parts = ln.split(/(\[[^\]]*\]?)/).filter(Boolean); const wTot = ctx.measureText(ln).width; let cx = o.align === 'right' ? x - wTot : o.align === 'center' ? x - wTot / 2 : x;
+    for (const p of parts) { const guard = p[0] === '[', vis = Math.max(0, Math.min(p.length, total - used)); used += p.length; if (vis > 0) { ctx.fillStyle = grain(guard ? C.thread : C.ink, .15); ctx.fillText(p.slice(0, vis), cx, y + li * lh); } cx += ctx.measureText(p).width; }
+  });
+  ctx.restore();
+}
+
+/* ===== props ===== */
+function cloud(ctx, x, y, w, h, o = {}) {
+  const pts = []; const n = 7;
+  for (let i = 0; i < n; i++) { const a0 = PI * .95 + i / n * PI * 1.1, a1 = a0 + PI * 1.1 / n; const bx = x + Math.cos((a0 + a1) / 2) * w * .5, by = y + Math.sin((a0 + a1) / 2) * h * .5; pts.push(...ell(bx, by, w * .16, h * .32, 9, (a0 + a1) / 2 - 1.6, (a0 + a1) / 2 + 1.6)); }
+  pts.push([x + w * .5, y + h * .25], [x - w * .5, y + h * .25]);
+  shape(ctx, smoothPts(pts, 1), { fill: o.fill || C.white, h: { gap: 4, base: o.base ?? .45, solid: o.solid ?? C.white, layers: [{ color: o.hatch || C.blue, gap: 4.5 }] }, w: 2.2 });
+}
+function sun(ctx, x, y, r, t) {
+  for (let i = 0; i < 12; i++) { const a = i / 12 * TAU + t * .25, r0 = r * 1.25, r1 = r * (1.6 + .1 * Math.sin(t * 3 + i)); line(ctx, [[x + Math.cos(a) * r0, y + Math.sin(a) * r0], [x + Math.cos(a) * r1, y + Math.sin(a) * r1]], { color: C.gold, w: 2.8, passes: 1 }); }
+  shape(ctx, ell(x, y, r, r, 28), { fill: C.gold, h: { gap: 2.8, base: .85, layers: [{ color: '#f0d27a' }] }, w: 2.4 });
+}
+function steam(ctx, x, y, t, k, len = 70, amp = 6) {
+  const ph = ((t * .32 + k * .37) % 1), pts = [];
+  for (let i = 0; i <= 18; i++) pts.push([x + Math.sin(i * .6 + t * 2.2 + k) * amp * (0.4 + i / 18), y - i / 18 * len - ph * 18]);
+  ctx.save(); ctx.globalAlpha = Math.sin(ph * PI) * .85 + .1; for (let s = 0; s < pts.length - 2; s += 6) line(ctx, pts.slice(s, s + 4), { w: 2.2, color: C.slate, passes: 1, amp: .4 }); ctx.restore();
+}
+function tree(ctx, x, by, s = 1, c = C.sageD, sway = 0) {
+  shape(ctx, capsule([[x, by], [x + sway * .3, by - 14 * s]], 5 * s, 3.4 * s), { fill: C.woodD, h: { gap: 2.4, base: .8, angle: -1.4 }, w: 1.6 });
+  const cx = x + sway, cy = by - 28 * s;
+  shape(ctx, ell(cx, cy, 15 * s, 16 * s, 22), { fill: c, h: { gap: 3, base: .75, layers: [{ color: C.sage }, { color: C.sageD, angle: .4, gap: 6, alpha: .6 }] }, w: 2 });
+  shape(ctx, ell(cx - 5 * s, cy - 6 * s, 7 * s, 7 * s, 14), { fill: C.sage, h: { gap: 3, base: .5 }, w: 1.2 });
+}
+function pine(ctx, x, by, s = 1) {
+  shape(ctx, [[x - 12 * s, by - 8 * s], [x + 12 * s, by - 8 * s], [x, by - 32 * s]], { fill: C.sageD, h: { gap: 2.8, base: .8, angle: -1.2 }, w: 1.8 });
+  shape(ctx, [[x - 9 * s, by - 26 * s], [x + 9 * s, by - 26 * s], [x, by - 46 * s]], { fill: C.sage, h: { gap: 2.8, base: .8, angle: -1.2 }, w: 1.8 });
+  line(ctx, [[x, by - 8 * s], [x, by]], { w: 3, passes: 1 });
+}
+function bush(ctx, x, by, s = 1) { shape(ctx, ell(x, by - 5 * s, 10 * s, 7 * s, 16), { fill: C.sage, h: { gap: 3, base: .8, layers: [{ color: C.sageD, alpha: .5, angle: .5, gap: 6 }] }, w: 1.8 }); }
+function flower(ctx, x, by, col, sway = 0) { line(ctx, [[x, by], [x + sway, by - 9]], { w: 1.4, passes: 1, amp: .3, color: C.sageD }); dot(ctx, x + sway, by - 11, 3.2, col, { w: 1.2 }); }
+function rock(ctx, x, by, s = 1) { shape(ctx, ell(x, by - 3 * s, 8 * s, 5 * s, 12), { fill: C.steel, h: { gap: 3, base: .8, layers: [{ color: C.slate, alpha: .5 }] }, w: 1.6 }); }
+function lamp(ctx, x, by, glow = 0) { line(ctx, [[x, by], [x, by - 24]], { w: 2.2, passes: 1 }); if (glow) { ctx.save(); ctx.globalAlpha = .22 * glow; ctx.fillStyle = C.gold; ctx.beginPath(); ctx.arc(x, by - 28, 16, 0, TAU); ctx.fill(); ctx.restore(); } dot(ctx, x, by - 28, 4.4, C.gold, { w: 1.6 }); }
+function fence(ctx, x0, x1, by) { line(ctx, [[x0, by - 8], [x1, by - 8]], { w: 1.8, passes: 1, amp: .5 }); for (let x = x0; x <= x1; x += 9) line(ctx, [[x, by], [x, by - 12]], { w: 1.8, passes: 1, amp: .3 }); }
+function stoneAt(ctx, x, y, r) { shape(ctx, ell(x, y, r, r * .5, 12), { fill: C.beige, h: { gap: 3.4, base: .7 }, w: 1.3 }); }
+function windmill(ctx, x, by, T) {
+  shape(ctx, [[x - 14, by], [x + 14, by], [x + 9, by - 52], [x - 9, by - 52]], { fill: C.face, h: { gap: 3, base: .5, solid: C.white, layers: [{ color: C.beige, alpha: .6 }] }, w: 2 });
+  shape(ctx, [[x - 12, by - 52], [x + 12, by - 52], [x, by - 70]], { fill: C.rose, h: { gap: 2.8, base: .8, angle: -1.2 }, w: 2 });
+  shape(ctx, rectP(x - 4, by - 14, 8, 14), { fill: C.wood, h: { base: .8, gap: 2.4 }, w: 1.4 });
+  shape(ctx, rectP(x - 3, by - 40, 6, 8), { fill: C.blue, h: { base: .8, gap: 2.4 }, w: 1.2 });
+  const hub = [x, by - 52], a0 = T * .8;
+  for (let k = 0; k < 4; k++) { const a = a0 + k * PI / 2, c = Math.cos(a), s = Math.sin(a), px = -s, py = c; const p0 = [hub[0] + c * 6, hub[1] + s * 6], p1 = [hub[0] + c * 36, hub[1] + s * 36];
+    shape(ctx, [[p0[0] + px * 4, p0[1] + py * 4], [p1[0] + px * 6, p1[1] + py * 6], [p1[0] - px * 6, p1[1] - py * 6], [p0[0] - px * 4, p0[1] - py * 4]], { fill: C.wood, h: { gap: 3, base: .6, solid: C.white }, w: 1.6, passes: 1 });
+    line(ctx, [[hub[0] + c * 10, hub[1] + s * 10], [hub[0] + c * 34, hub[1] + s * 34]], { w: 1, passes: 1, amp: .2 }); }
+  dot(ctx, hub[0], hub[1], 4, C.woodD, { w: 1.4 });
+}
+function balloon(ctx, x, y, c1, c2, s = 1, T = 0, k = 0) {
+  const bx = x + Math.sin(T * .6 + k) * 9, by = y + Math.sin(T * .9 + k * 2) * 8, sw = Math.sin(T * .6 + k) * 3;
+  seed('bln' + k);
+  line(ctx, [[bx - 11 * s, by + 18 * s], [bx - 5 * s + sw, by + 38 * s]], { w: 1, passes: 1, amp: .2 }); line(ctx, [[bx + 11 * s, by + 18 * s], [bx + 5 * s + sw, by + 38 * s]], { w: 1, passes: 1, amp: .2 });
+  shape(ctx, ell(bx, by, 22 * s, 26 * s, 26), { fill: c1, h: { gap: 3, base: .8, solid: C.white, layers: [{ color: c1 }] }, w: 2.2 });
+  shape(ctx, [[bx - 6 * s, by - 25 * s], [bx + 6 * s, by - 25 * s], [bx + 5 * s, by + 25 * s], [bx - 5 * s, by + 25 * s]], { fill: c2, h: { gap: 3, base: .7 }, w: 1.2, passes: 1 });
+  shape(ctx, rectP(bx - 6 * s + sw, by + 38 * s, 12 * s, 9 * s), { fill: C.wood, h: { gap: 2.4, base: .8 }, w: 1.4 });
+}
+function bird(ctx, x, y, T, k) { const f = Math.sin(T * 9 + k * 2) * 4; line(ctx, [[x - 9, y + 2 - f], [x - 4, y - 2], [x, y + 1], [x + 4, y - 2], [x + 9, y + 2 - f]], { w: 1.6, passes: 1, amp: .3 }); }
+function sparkle(ctx, x, y, r, T, k) { const a = .4 + .6 * Math.abs(Math.sin(T * 1.6 + k * 1.7)); const rr = r * (.6 + .5 * a); ctx.save(); ctx.globalAlpha = a; line(ctx, [[x - rr, y], [x + rr, y]], { w: 1.4, passes: 1, amp: .2, color: C.gold }); line(ctx, [[x, y - rr], [x, y + rr]], { w: 1.4, passes: 1, amp: .2, color: C.gold }); ctx.restore(); }
+function house(ctx, x, by, w, h, roof, o = {}) {
+  const body = rectP(x - w / 2, by - h, w, h);
+  shape(ctx, tr(body, 4, 4), { fill: C.ink, h: { base: .12, gap: 3, angle: -.8, alpha: .6 }, stroke: null });
+  shape(ctx, body, { fill: C.beige, h: { gap: 3.6, base: .5, solid: C.face, layers: [{ color: '#efe3cc', alpha: .5 }] }, w: 2.2 });
+  const rp = [[x - w / 2 - 8, by - h], [x + w / 2 + 8, by - h], [x + w * .22, by - h - h * .72], [x - w * .22, by - h - h * .72]];
+  shape(ctx, rp, { fill: roof, radial: [x, by - h - h * .8], r: { cols: [roof, C.white, roof, C.ink], n: 34, w: 2, base: .85, inner: 0, a0: PI * .15, a1: PI * .85, solid: C.white }, w: 2.3 });
+  shape(ctx, [[x + w * .22, by - h - h * .5], [x + w * .22 + 9, by - h - h * .5], [x + w * .22 + 9, by - h - h * .72 + 2], [x + w * .22, by - h - h * .72 + 2]], { fill: C.rose, h: { base: .8, gap: 2.4 }, w: 1.6 });
+  shape(ctx, ell(x - 10, by - 11, 9, 11, 14, PI, TAU), { fill: C.wood, h: { base: .85, gap: 2.4, angle: -1.4 }, w: 1.6, open: false });
+  shape(ctx, rectP(x + w / 2 - 22, by - h * .7, 15, 14), { fill: o.glow ? '#ffe9a8' : C.blue, h: { base: .8, gap: 2.4, solid: o.glow ? '#fff3c4' : C.white }, w: 1.6 });
+  line(ctx, [[x + w / 2 - 14.5, by - h * .7], [x + w / 2 - 14.5, by - h * .7 + 14]], { w: 1, passes: 1, amp: .2 });
+}
+function person(ctx, o) {
+  const { x, y, s = 1, shirt = C.mint, hair = C.ink, t = 0, act = 0, f = 1, id = 'p', bun = false, hat = null } = o;
+  const sw = Math.sin(t * 3 + x * .1), bob = act ? Math.abs(Math.sin(t * 5 + x)) * 3 : Math.sin(t * 1.6 + x) * .8, yb = y - bob;
+  seed('pp' + id);
+  const hipY = yb - 22 * s, neckY = hipY - 22 * s, hx = x + f * 1.2 * s, hy = neckY - 10 * s;
+  for (const dx of [-5, 5]) { shape(ctx, capsule([[x + dx * s, hipY], [x + dx * s, yb - 2 * s]], 7 * s), { fill: C.slate, h: { gap: 3, base: .8, angle: -1.4 }, w: 1.5, passes: 1 }); shape(ctx, ell(x + dx * s + f * 2 * s, yb, 5.5 * s, 2.6 * s, 10), { fill: C.ink, h: { base: .9, gap: 2.2 }, w: 1.2, passes: 1 }); }
+  const handB = [x - 13 * s, hipY - 2 * s + sw * 2 * s], handF = act ? [x + 18 * s, neckY - 12 * s + Math.sin(t * 8) * 5 * s] : [x + 13 * s, hipY - 2 * s - sw * 2 * s];
+  shape(ctx, capsule([[x - 9 * s, neckY + 3 * s], [x - 12 * s, (neckY + handB[1]) / 2], handB], 5.6 * s), { fill: shirt, h: { gap: 3, base: .8 }, w: 1.4, passes: 1 });
+  const tp = smoothPts([[x - 9 * s, neckY], [x + 9 * s, neckY], [x + 11 * s, hipY + 3 * s], [x - 11 * s, hipY + 3 * s]], 1);
+  shape(ctx, tp, { fill: shirt, h: { gap: 3, base: .85, solid: C.white, layers: [{ color: shirt }] }, w: 2, passes: 1 });
+  shape(ctx, capsule([[x + 9 * s, neckY + 3 * s], [x + 12 * s, (neckY + handF[1]) / 2], handF], 5.6 * s), { fill: shirt, h: { gap: 3, base: .8 }, w: 1.4, passes: 1 });
+  dot(ctx, handF[0], handF[1], 2.8 * s, C.face, { w: 1, passes: 1 }); dot(ctx, handB[0], handB[1], 2.8 * s, C.face, { w: 1, passes: 1 });
+  if (bun) shape(ctx, ell(hx - f * 7 * s, hy - 8 * s, 4.4 * s, 4.4 * s, 10), { fill: hair, h: { base: .9, gap: 2.2 }, w: 1.2, passes: 1 });
+  shape(ctx, ell(hx, hy, 9.6 * s, 10 * s, 18), { fill: C.face, h: { gap: 3.4, base: .35, solid: C.face }, w: 1.8, passes: 1 });
+  shape(ctx, ell(hx, hy - 1 * s, 10.2 * s, 10.4 * s, 14, PI * 1.05, TAU * .98), { fill: hair, h: { base: .9, gap: 2.2 }, w: 1.4, open: true, passes: 1 });
+  if (hat === 'cap') shape(ctx, [[hx - 10 * s, hy - 5 * s], [hx + 10 * s, hy - 5 * s], [hx + 8 * s, hy - 13 * s], [hx - 8 * s, hy - 13 * s]], { fill: C.rose, h: { base: .85, gap: 2.4 }, w: 1.4, passes: 1 });
+  dot(ctx, hx + f * 3.4 * s - 3.2 * s, hy + 1 * s, 1.1 * s, C.ink, { stroke: null }); dot(ctx, hx + f * 3.4 * s + 3.2 * s, hy + 1 * s, 1.1 * s, C.ink, { stroke: null });
+  dot(ctx, hx + f * 3.4 * s - 5.6 * s, hy + 4 * s, 2 * s, C.cheek, { stroke: null }); dot(ctx, hx + f * 3.4 * s + 5.6 * s, hy + 4 * s, 2 * s, C.cheek, { stroke: null });
+  line(ctx, qbez([hx + f * 3.4 * s - 2 * s, hy + 5.4 * s], [hx + f * 3.4 * s, hy + 7 * s], [hx + f * 3.4 * s + 2 * s, hy + 5.4 * s], 4), { w: 1, passes: 1, amp: .1 });
+}
+
+/* ===== zones, steps, thread ===== */
+const ZONES = {
+  owner: { x: 500, by: 548, name: 'โต๊ะเจ้าของ', roles: '' },
+  z1: { x: 205, by: 500, roof: C.mint, name: '1 หาและคิด', roles: 'นักจับเทรนด์ · นักคิดคอนเทนต์' },
+  z2: { x: 500, by: 425, roof: C.blue, name: '2 เขียนและอนุมัติ', roles: 'นักเขียนสคริป · ตู้รออนุมัติ' },
+  z3: { x: 795, by: 500, roof: C.rose, name: '3 ผลิต', roles: 'ช่างวิดีโอ · บรรณารักษ์ · นักเสียง · ปก · ตัดต่อ' },
+  z4: { x: 780, by: 630, roof: C.gold, name: '4 ปล่อยและเรียนรู้', roles: 'ผู้ปล่อยงาน · นักวัดผล' },
+  z5: { x: 500, by: 682, roof: C.sage, name: '5 รายได้', roles: 'โต๊ะขาย' },
+  z6: { x: 222, by: 630, roof: C.lilac, name: '6 หลังบ้าน', roles: 'โปรดิวเซอร์ · ตรวจสิทธิ์ · คลังความรู้ · งบ' },
+};
+const CAST = [
+  { z: 'z1', dx: -56, shirt: C.mint, hair: C.ink, id: 'trend', bun: true }, { z: 'z1', dx: 56, shirt: C.lilac, hair: C.ink, id: 'idea', f: -1 },
+  { z: 'z2', dx: -56, shirt: C.blue, hair: C.ink, id: 'script' },
+  { z: 'z3', dx: -58, shirt: C.pink, hair: C.ink, id: 'video', bun: true }, { z: 'z3', dx: 58, shirt: C.sage, hair: C.ink, id: 'edit', f: -1, hat: 'cap' },
+  { z: 'z4', dx: -56, shirt: C.gold, hair: C.ink, id: 'post' }, { z: 'z4', dx: 56, shirt: C.blue, hair: C.ink, id: 'measure', f: -1 },
+  { z: 'z5', dx: -52, shirt: C.sage, hair: C.ink, id: 'sales', bun: true },
+  { z: 'z6', dx: -56, shirt: C.lilac, hair: C.ink, id: 'prod' }, { z: 'z6', dx: 56, shirt: C.mint, hair: C.ink, id: 'qa', f: -1 },
+  { z: 'owner', dx: 0, shirt: C.rose, hair: C.ink, id: 'owner', y: -2, bun: true },
+];
+// ก้าวทั้ง 8 ตาม models/W6.tla  (คำไทยเดียวกับ view.mjs)
+const TICKETS = {
+  idle: { x: 372, y: 552, w: 150, label: 'ว่าง รอรอบใหม่', tag: 'โต๊ะเจ้าของ', pin: C.pinG },
+  trend: { x: 205, y: 360, w: 150, label: 'ค้นเทรนด์', tag: 'ห้อง 1', pin: C.pinB },
+  idea: { x: 205, y: 306, w: 160, label: 'คิดคอนเทนต์', tag: 'ห้อง 1', pin: C.pinG },
+  script: { x: 500, y: 270, w: 150, label: 'เขียนสคริป', tag: 'ห้อง 2', pin: C.pinR },
+  waiting: { x: 700, y: 384, w: 160, label: 'รอคุณอนุมัติ', tag: 'ด่านที่ 1', pin: C.pinR },
+  approved: { x: 640, y: 560, w: 150, label: 'อนุมัติแล้ว', tag: 'โต๊ะเจ้าของ', pin: C.pinG },
+  video: { x: 800, y: 360, w: 170, label: 'ทำวิดีโอ AI', tag: 'ห้อง 3', pin: C.pinB },
+  edit: { x: 800, y: 306, w: 150, label: 'ตัดต่อรีล', tag: 'ห้อง 3', pin: C.pinG },
+  post: { x: 900, y: 604, w: 130, label: 'ปล่อยงาน', tag: 'ห้อง 4', pin: C.pinR },
+};
+const EDGES = {
+  e0: { pts: [[470, 572], [400, 612], [270, 588], [205, 526]], label: 'จับเทรนด์' },
+  e1: { pts: [[168, 528], [205, 552], [242, 528]], label: 'คิดต่อ' },
+  e2: { pts: [[242, 528], [320, 494], [410, 466], [470, 456]], label: 'ส่งให้นักเขียน' },
+  e3: { pts: [[470, 456], [535, 480], [600, 474]], label: 'ยื่นเข้าตู้' },
+  e4: { pts: [[600, 474], [618, 530], [548, 570]], label: '[คุณเปิดตู้ ✓]' },
+  e5: { pts: [[548, 572], [660, 606], [750, 556], [795, 528]], label: 'สั่งทำวิดีโอ' },
+  e6: { pts: [[765, 530], [795, 556], [828, 530]], label: 'ตัดต่อ' },
+  e7: { pts: [[828, 530], [890, 596], [850, 668], [770, 680], [660, 656], [552, 590]], label: 'ปล่อย → วัดผล → เรียนรู้' },
+};
+const STEPS = [
+  { name: 'Trend', from: 'idle', to: 'trend', on: ['z1'], go: ['e0'], tk: ['trend'], note: 'เริ่มรอบ: นักจับเทรนด์ค้นเทรนด์', hot: 'z1' },
+  { name: 'Idea', from: 'trend', to: 'idea', on: ['z1'], go: ['e1'], tk: ['trend', 'idea'], note: 'ส่งเทรนด์ให้นักคิดคอนเทนต์', hot: 'z1' },
+  { name: 'Script', from: 'idea', to: 'script', on: ['z2'], go: ['e2'], tk: ['trend', 'idea', 'script'], note: 'ไอเดียไปถึงนักเขียนสคริป', hot: 'z2' },
+  { name: 'Submit', from: 'script', to: 'waiting', on: ['z2'], go: ['e3'], tk: ['trend', 'idea', 'script', 'waiting'], note: 'ยื่นสคริปต์เข้าตู้รออนุมัติ', hot: 'cab' },
+  { name: 'Approve', from: 'waiting', to: 'approved', on: ['owner'], go: ['e4'], tk: ['trend', 'idea', 'script', 'waiting', 'approved'], note: 'ด่านที่ 1: คุณคนเดียวเปิดตู้อนุมัติ', hot: 'owner', gate: true },
+  { name: 'Video', from: 'approved', to: 'video', on: ['z3'], go: ['e5'], tk: ['trend', 'idea', 'script', 'waiting', 'approved', 'video'], note: 'อนุมัติแล้วเท่านั้น ถึงสั่งช่างวิดีโอ AI ได้', hot: 'z3' },
+  { name: 'Edit', from: 'video', to: 'edit', on: ['z3'], go: ['e6'], tk: ['trend', 'idea', 'script', 'waiting', 'approved', 'video', 'edit'], note: 'ดึงไฟล์มาตัดต่อรีล', hot: 'z3' },
+  { name: 'Post', from: 'edit', to: 'idle', on: ['z4'], go: ['e7'], tk: ['trend', 'idea', 'script', 'waiting', 'approved', 'video', 'edit', 'post'], note: 'ปล่อยงาน วัดผล แล้ววนกลับไปหาเทรนด์', hot: 'z4', post: true },
+];
+
+/* ===== static layer: paper, title, island, houses, trees, props (cached per boil) ===== */
+function paperBg(g) {
+  g.fillStyle = C.paper; g.fillRect(0, 0, 1000, 1000);
+  const n = document.createElement('canvas'); n.width = n.height = 200; const ng = n.getContext('2d'); const r = mulberry(7);
+  for (let i = 0; i < 9000; i++) { ng.fillStyle = r() < .5 ? 'rgba(120,100,70,' + (r() * .07) + ')' : 'rgba(255,255,255,' + (r() * .35) + ')'; ng.fillRect(r() * 200, r() * 200, r() * 2 + .5, r() * 2 + .5); }
+  g.fillStyle = g.createPattern(n, 'repeat'); g.fillRect(0, 0, 1000, 1000);
+}
+const ISL = { cx: 500, cy: 548, rx: 412, ry: 172 };
+function island(g) {
+  // clouds behind the rock
+  seed('cb'); cloud(g, 130, 640, 190, 70); cloud(g, 880, 650, 200, 70); cloud(g, 300, 860, 220, 80); cloud(g, 720, 880, 240, 80);
+  const under = smoothPts([[96, 548], [900, 548], [870, 620], [800, 700], [700, 780], [610, 860], [545, 925], [500, 945], [455, 915], [390, 840], [300, 760], [200, 680], [130, 610]], 2);
+  seed('under'); shape(g, under, { fill: C.beige, h: { gap: 3.2, base: .65, solid: C.face, layers: [{ color: C.wood, alpha: .55, angle: -1.2, gap: 5 }, { color: C.woodD, alpha: .35, angle: .5, gap: 8 }] }, w: 2.8 });
+  seed('crack'); for (const [x, y, l] of [[250, 640, 40], [330, 690, 50], [420, 760, 50], [560, 740, 60], [650, 690, 44], [760, 630, 40], [510, 850, 50], [470, 800, 40]]) line(g, [[x, y], [x + rnd(-8, 8), y + l * .5], [x + rnd(-12, 12), y + l]], { w: 1.6, passes: 1, color: C.woodD });
+  seed('vine'); for (const x of [180, 260, 560, 720, 820]) { const y0 = ISL.cy + ISL.ry * Math.sqrt(Math.max(0, 1 - ((x - ISL.cx) / ISL.rx) ** 2)); line(g, bez([x, y0 - 4], [x - 6, y0 + 18], [x + 8, y0 + 34], [x, y0 + 52], 10), { w: 2, color: C.sageD, passes: 1 }); for (let k = 1; k < 4; k++) dot(g, x + (k % 2 ? 4 : -4), y0 + k * 12, 3.4, C.sage, { w: 1, passes: 1 }); }
+  seed('rim'); shape(g, ell(ISL.cx, ISL.cy + 12, ISL.rx, ISL.ry, 60), { fill: C.woodD, h: { gap: 3, base: .8, angle: -.3 }, w: 2.4 });
+  seed('top'); const top = ell(ISL.cx, ISL.cy, ISL.rx, ISL.ry, 60);
+  shape(g, top, { fill: C.sage, h: { gap: 3.4, base: .7, solid: '#e6f0d8', layers: [{ color: C.sage }, { color: C.sageD, angle: .3, gap: 7, alpha: .55 }, { color: '#bcd29f', angle: -.7, gap: 6, alpha: .6 }] }, w: 3 });
+}
+function groundDetail(g, list) {
+  // stone path linking the zones (decorative), tufts of grass
+  seed('stones'); const path = [[500, 556], [410, 596], [270, 572], [205, 514]];
+  for (let i = 0; i < 16; i++) { const a = rnd(0, TAU), r = Math.sqrt(rnd()); stoneAt(g, ISL.cx + Math.cos(a) * ISL.rx * .9 * r, ISL.cy + Math.sin(a) * ISL.ry * .85 * r, rnd(3, 5)); }
+  seed('tufts'); for (let i = 0; i < 40; i++) { const a = rnd(0, TAU), r = Math.sqrt(rnd()), x = ISL.cx + Math.cos(a) * ISL.rx * .95 * r, y = ISL.cy + Math.sin(a) * ISL.ry * .9 * r; line(g, [[x - 3, y], [x - 1, y - 6]], { w: 1.3, passes: 1, amp: .2, color: C.sageD }); line(g, [[x + 3, y], [x + 1, y - 7]], { w: 1.3, passes: 1, amp: .2, color: C.sageD }); }
+}
+function staticItems() {
+  const L = [];
+  const z = ZONES;
+  for (const k of ['z1', 'z2', 'z3', 'z4', 'z5', 'z6']) L.push({ y: z[k].by, fn: g => { seed('h' + k); const q = hs(k); house(g, z[k].x, z[k].by, q.w, q.h, z[k].roof); } });
+  // trees, pines, bushes
+  [[88, 560, 1, C.sageD], [900, 560, .95, C.sage], [322, 466, .9, C.sage], [660, 456, .85, C.sageD], [130, 500, .9, C.sage], [880, 512, 1, C.sageD], [120, 592, .8, C.sage], [905, 590, .8, C.sageD], [352, 600, .8, C.sage], [650, 640, .8, C.sageD]].forEach(([x, y, s, c], i) => L.push({ y, fn: g => { seed('t' + i); tree(g, x, y, s, c); } }));
+  [[154, 480, .9], [872, 470, .9], [596, 440, .7], [405, 450, .75]].forEach(([x, y, s], i) => L.push({ y, fn: g => { seed('pn' + i); pine(g, x, y, s); } }));
+  [[312, 560], [688, 560], [378, 636], [622, 636], [436, 620], [566, 620], [110, 548], [900, 548], [345, 505], [655, 505], [275, 640], [730, 640], [160, 640], [840, 650]].forEach(([x, y], i) => L.push({ y, fn: g => { seed('b' + i); bush(g, x, y, .9); } }));
+  seed('fl'); const rr = mulberry(11); for (let i = 0; i < 46; i++) { const a = rr() * TAU, r = Math.sqrt(rr()), x = ISL.cx + Math.cos(a) * ISL.rx * .92 * r, y = ISL.cy + Math.sin(a) * ISL.ry * .86 * r, col = [C.rose, C.gold, C.lilac, C.pink][i % 4]; L.push({ y, fn: g => { seed('f' + i); flower(g, x, y, col); } }); }
+  [[352, 540], [640, 545], [450, 620], [560, 625], [130, 560], [868, 600]].forEach(([x, y], i) => L.push({ y, fn: g => { seed('r' + i); rock(g, x, y, .9); } }));
+  L.push({ y: 618, fn: g => { seed('fe'); fence(g, 612, 700, 640); } });
+  // owner desk (static part)
+  L.push({ y: z.owner.by + 12, fn: g => { seed('desk'); const x = z.owner.x, y = z.owner.by;
+    shape(g, [[x - 40, y + 2], [x + 40, y + 2], [x + 44, y + 14], [x - 44, y + 14]], { fill: C.wood, h: { gap: 3, base: .8, solid: C.face, layers: [{ color: C.woodD, alpha: .5, gap: 6 }] }, w: 2.2 });
+    shape(g, rectP(x - 38, y + 14, 6, 14), { fill: C.woodD, h: { base: .85, gap: 2.4 }, w: 1.4 }); shape(g, rectP(x + 32, y + 14, 6, 14), { fill: C.woodD, h: { base: .85, gap: 2.4 }, w: 1.4 });
+    shape(g, [[x - 16, y - 8], [x + 8, y - 8], [x + 12, y + 2], [x - 20, y + 2]], { fill: C.steel, h: { base: .7, gap: 3 }, w: 1.6 }); dot(g, x - 4, y - 3, 1.8, C.white, { w: .8, passes: 1 });
+    line(g, [[x + 28, y + 2], [x + 28, y - 14], [x + 20, y - 18]], { w: 2, passes: 1 }); shape(g, [[x + 15, y - 19], [x + 25, y - 19], [x + 28, y - 12], [x + 12, y - 12]], { fill: C.gold, h: { base: .8, gap: 2.4 }, w: 1.4, passes: 1 }); } });
+  // z1 telescope
+  L.push({ y: z.z1.by + 6, fn: g => { seed('tele'); const x = z.z1.x - 28, y = z.z1.by + 2; line(g, [[x, y], [x - 8, y + 16]], { w: 2, passes: 1 }); line(g, [[x, y], [x + 8, y + 16]], { w: 2, passes: 1 }); shape(g, capsule([[x - 10, y - 4], [x + 14, y - 18]], 7, 10), { fill: C.slate, h: { base: .8, gap: 2.6 }, w: 1.6 }); } });
+  // z4 mailbox + chart board
+  L.push({ y: z.z4.by + 4, fn: g => { seed('mail'); const x = z.z4.x + 30, y = z.z4.by + 8; line(g, [[x, y], [x, y - 20]], { w: 2.4, passes: 1 }); shape(g, [[x - 11, y - 20], [x + 11, y - 20], [x + 11, y - 32], [x - 11, y - 32]], { fill: C.gold, h: { base: .8, gap: 2.6 }, w: 1.8 });
+    const bx = z.z4.x - 40, by2 = z.z4.by + 4; line(g, [[bx - 10, by2], [bx - 10, by2 - 30]], { w: 2, passes: 1 }); line(g, [[bx + 22, by2], [bx + 22, by2 - 30]], { w: 2, passes: 1 }); shape(g, rectP(bx - 14, by2 - 52, 40, 28), { fill: C.face, h: { base: .4, gap: 5, solid: C.white }, w: 1.8 }); } });
+  // z5 stall awning
+  L.push({ y: z.z5.by + 4, fn: g => { seed('stall'); const x = z.z5.x + 46, y = z.z5.by + 6; shape(g, rectP(x - 18, y - 14, 36, 14), { fill: C.wood, h: { base: .8, gap: 2.6 }, w: 1.6 }); for (let i = 0; i < 4; i++) shape(g, [[x - 20 + i * 10, y - 34], [x - 10 + i * 10, y - 34], [x - 12 + i * 10, y - 22], [x - 22 + i * 10, y - 22]], { fill: i % 2 ? C.white : C.rose, h: { base: .8, gap: 2.4 }, w: 1.2, passes: 1 }); } });
+  // z6 shelves
+  L.push({ y: z.z6.by + 4, fn: g => { seed('shelf'); const x = z.z6.x - 6, y = z.z6.by + 4; shape(g, rectP(x + 34, y - 40, 24, 40), { fill: C.wood, h: { base: .7, gap: 3 }, w: 1.8 }); for (let r = 0; r < 3; r++) { line(g, [[x + 34, y - 28 + r * 12 - 12], [x + 58, y - 28 + r * 12 - 12]], { w: 1.4, passes: 1 }); for (let b = 0; b < 3; b++) shape(g, rectP(x + 37 + b * 6, y - 38 + r * 12, 4, 9), { fill: [C.rose, C.mint, C.gold][(b + r) % 3], h: { base: .85, gap: 2 }, w: .9, passes: 1 }); } } });
+  L.sort((a, b) => a.y - b.y); return L;
+}
+const HK = { z1: 1.3, z2: 1.35, z3: 1.5, z4: 1.3, z5: 1.1, z6: 1.3 };
+const hs = k => ({ w: 76 * HK[k], h: 50 * HK[k] });
+const SLIST = staticItems();
+function buildStatic(g) {
+  paperBg(g);
+  seed('hdr'); txt(g, 'modty.ai  ·  ออฟฟิศ AI ของ solo creator', 56, 54, { font: `400 15px ${FONT_T}` });
+  txt(g, 'ออฟฟิศทีมช่วยงาน', 52, 124, { font: `700 64px ${FONT_T}`, double: true });
+  label(g, 'เกาะลอยที่มี 6 โซน เทรนด์ → โพสต์ มีสองด่านให้คุณกด', 58, 158, { size: 19 });
+  island(g); groundDetail(g, null);
+  windmillBase(g);
+  for (const it of SLIST) it.fn(g);
+  // clouds in front of the rock + hanging sparkle
+  seed('cf'); cloud(g, 150, 700, 150, 56, { base: .5 }); cloud(g, 870, 720, 150, 56, { base: .5 }); cloud(g, 430, 930, 190, 64); cloud(g, 640, 940, 170, 60);
+}
+function windmillBase(g) { /* windmill is dynamic (blades rotate) */ }
+
+/* ===== dynamic scene ===== */
+function ticketPts(x, y, w, h) { const L = x - w / 2, Rr = x + w / 2, T = y - h / 2, B = y + h / 2, pts = [[L, T], [Rr, T], [Rr, B - 2]]; const n = Math.round(w / 11); for (let i = 1; i < n; i++) pts.push([Rr - w * i / n, B + (i % 2 ? 3 : -2)]); pts.push([L, B - 2]); return pts; }
+function ticket(ctx, id, b, st) {
+  const x = b.x, y = b.y, w = b.w, h = 46, sc = st.pop ?? 1;
+  ctx.save(); ctx.translate(x, y); ctx.scale(sc, sc); ctx.translate(-x, -y); ctx.globalAlpha = st.alpha ?? 1; seed('tk' + id + (st.active ? 'a' : ''));
+  const pts = ticketPts(x, y, w, h);
+  hatch(ctx, tr(pts, 5, 5), { color: C.ink, base: .12, gap: 2.8, w: 1.3, angle: -.8, alpha: .7 });
+  hatch(ctx, pts, { color: C.ticket, solid: C.ticket, base: .4, gap: 4.5, w: 1.5, angle: -.5, layers: [{ color: C.beige, alpha: .45 }] });
+  if (st.active) hatch(ctx, pts, { color: C.pink, base: .3, gap: 5, w: 1.4, angle: .9, layers: [{ color: C.rose, alpha: .25 }] });
+  line(ctx, pts, { closed: true, w: 2.3 });
+  ctx.save(); ctx.font = `italic 11px ${FONT_T}`; ctx.fillStyle = grain(C.thread, .2); ctx.fillText(b.tag, x - w / 2 + 8, y - h / 2 + 12); ctx.restore();
+  line(ctx, [[x - w / 2 + 7, y - h / 2 + 16], [x + w / 2 - 7, y - h / 2 + 16]], { color: C.thread, w: 1, passes: 1, amp: .4, alpha: .8 });
+  let fs = 19; ctx.save(); ctx.font = `700 ${fs}px ${FONT_T}`; while (ctx.measureText(b.label).width > w - 18 && fs > 12) { fs--; ctx.font = `700 ${fs}px ${FONT_T}`; } ctx.restore();
+  txt(ctx, b.label, x, y + 13, { font: `700 ${fs}px ${FONT_T}`, align: 'center', double: true });
+  const pr = 6.5 + (st.active ? 1.4 * Math.sin((st.at || 0) * 5) : 0); dot(ctx, x, y - h / 2, pr, b.pin, { w: 2 });
+  ctx.save(); ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.beginPath(); ctx.arc(x - pr * .35, y - h / 2 - pr * .35, pr * .28, 0, TAU); ctx.fill(); ctx.restore();
+  if (st.active) line(ctx, ticketPts(x, y, w + 12, h + 12), { closed: true, w: 1.8, color: C.rose, alpha: .55 + .3 * Math.sin((st.at || 0) * 4) });
+  ctx.restore();
+}
+function edgeDraw(ctx, id, prog) {
+  const e = EDGES[id]; seed('e' + id); const pts = e._pts || (e._pts = roundCorners(e.pts, 16));
+  line(ctx, pts, { w: 2.6, color: C.thread, progress: prog });
+  if (prog >= .999) { const E = pts[pts.length - 1], Q = pts[pts.length - 4] || pts[pts.length - 2]; const a = Math.atan2(E[1] - Q[1], E[0] - Q[0]); seed('ah' + id); shape(ctx, [[E[0] - Math.cos(a - .5) * 11, E[1] - Math.sin(a - .5) * 11], E, [E[0] - Math.cos(a + .5) * 11, E[1] - Math.sin(a + .5) * 11]], { fill: C.thread, h: { base: .9, gap: 2 }, w: 1.6, stroke: C.thread }); }
+}
+function pointAt(pts, f) { const P = resample(pts, 3, false); return P[Math.min(P.length - 1, Math.max(0, Math.round(f * (P.length - 1))))]; }
+function token(ctx, x, y, t) { seed('tok'); ctx.save(); ctx.globalAlpha = .35 + .2 * Math.sin(t * 8); ctx.fillStyle = grain(C.rose, .3); ctx.beginPath(); ctx.arc(x, y, 14, 0, TAU); ctx.fill(); ctx.restore(); dot(ctx, x, y, 7, C.rose, { w: 2 }); }
+
+function waterfall(ctx, T) {
+  const x0 = 432, y0 = ISL.cy + ISL.ry * Math.sqrt(1 - ((x0 - ISL.cx) / ISL.rx) ** 2) + 4, y1 = 928;
+  seed('wf'); const pts = [[x0 - 17, y0], [x0 + 17, y0], [x0 + 14, y1], [x0 - 14, y1]];
+  shape(ctx, pts, { fill: C.blue, h: { gap: 3, base: .75, solid: '#e8f3f8', layers: [{ color: '#9fc4d8', angle: -1.5, gap: 5, alpha: .7 }] }, w: 2 });
+  for (let i = 0; i < 7; i++) { const px = x0 - 12 + i * 4, off = (T * 110 + i * 41) % 120; line(ctx, [[px, y0 + off], [px - .5, Math.min(y1 - 2, y0 + off + 30)]], { w: 1.4, passes: 1, amp: .2, color: '#6f9bb4' }); }
+  for (let k = 0; k < 6; k++) { const ph = (T * .8 + k / 6) % 1; ctx.save(); ctx.globalAlpha = Math.sin(ph * PI); dot(ctx, x0 + Math.sin(k * 2 + ph * 6) * 22, y1 - ph * 22, 2.4 + ph * 2.4, C.white, { w: 1, passes: 1 }); ctx.restore(); }
+  shape(ctx, ell(x0, y1 + 4, 40 + Math.sin(T * 3) * 3, 11, 24), { fill: C.blue, h: { gap: 3, base: .7, solid: '#e8f3f8' }, w: 1.8 });
+  for (const dx of [-22, 0, 22]) { seed('foam' + dx); dot(ctx, x0 + dx, y1 + 2 + Math.sin(T * 3 + dx) * 2, 7, C.white, { w: 1.6, passes: 1 }); }
+}
+function sky(ctx, T) {
+  seed('sun'); sun(ctx, 880, 112, 36, T);
+  [[110, 252, C.rose, C.white, 1.0], [916, 262, C.blue, C.gold, .9], [690, 175, C.mint, C.pink, .7], [455, 205, C.lilac, C.white, .6]].forEach((b, k) => balloon(ctx, b[0], b[1], b[2], b[3], b[4], T, k));
+  for (const [x, y, w, k] of [[90, 330, 130, 1], [320, 215, 120, 2], [610, 255, 110, 3], [968, 380, 120, 4]]) { seed('cd' + k); cloud(ctx, ((x + T * 7 * (1 + k * .12)) % 1160) - 80, y + Math.sin(T * .5 + k) * 3, w, w * .4, { base: .4 }); }
+  for (let k = 0; k < 5; k++) { seed('br' + k); bird(ctx, ((T * (26 + k * 5) + k * 240) % 1200) - 100, 200 + k * 28 + Math.sin(T * 1.3 + k) * 8, T, k); }
+  for (let k = 0; k < 14; k++) { const rr = mulberry(k * 77 + 5); sparkle(ctx, 40 + rr() * 920, 60 + rr() * 800, 3 + rr() * 3, T, k); }
+}
+function props(ctx, S, T, t, A) {
+  const z = ZONES, step = A;
+  // windmill (back, between zones 1 and 2)
+  seed('wm'); windmill(ctx, 352, 456, T);
+  // chimney smoke from houses
+  for (const k of ['z1', 'z2', 'z3', 'z4', 'z5', 'z6']) { const hot = step && step.hot === k; const q = hs(k), x = z[k].x + q.w * .22 + 4, top = z[k].by - q.h - q.h * .5; seed('sm' + k); steam(ctx, x + 4, top + 6, T, k.charCodeAt(1), hot ? 60 : 36, hot ? 7 : 4); }
+  // z1: light bulb that glows when idea
+  { const on = step && step.name === 'Idea' ? clamp(t / .6) : 0; const x = z.z1.x + 56, y = z.z1.by - 104 + Math.sin(T * 2) * 2; seed('bulb'); if (on) { ctx.save(); ctx.globalAlpha = .28 * on; ctx.fillStyle = C.gold; ctx.beginPath(); ctx.arc(x, y, 22 + Math.sin(T * 6) * 2, 0, TAU); ctx.fill(); ctx.restore(); for (let i = 0; i < 8; i++) { const a = i / 8 * TAU; line(ctx, [[x + Math.cos(a) * 15, y + Math.sin(a) * 15], [x + Math.cos(a) * 22, y + Math.sin(a) * 22]], { w: 1.5, passes: 1, amp: .2, color: C.gold }); } } shape(ctx, ell(x, y, 8, 9, 14), { fill: on ? C.gold : C.sky, h: { base: .8, gap: 2.4, solid: on ? '#fff0b8' : C.white }, w: 1.6, passes: 1 }); shape(ctx, rectP(x - 3.5, y + 8, 7, 5), { fill: C.steel, h: { base: .8, gap: 2 }, w: 1.2, passes: 1 }); }
+  // z2: approval cabinet (door opens at Approve), glows while waiting
+  { const cx = z.z2.x + 100, cy = z.z2.by + 38; const wait = step && (step.name === 'Submit' || step.name === 'Approve'); const open = step && step.name === 'Approve' ? ease(clamp((t - .9) / .6)) : 0; seed('cab');
+    if (wait) { ctx.save(); ctx.globalAlpha = .2 + .08 * Math.sin(T * 5); ctx.fillStyle = C.rose; ctx.beginPath(); ctx.ellipse(cx, cy - 16, 30, 34, 0, 0, TAU); ctx.fill(); ctx.restore(); }
+    shape(ctx, rectP(cx - 15, cy - 38, 30, 40), { fill: C.rose, h: { gap: 3, base: .75, solid: C.white, layers: [{ color: C.pink }] }, w: 2 });
+    shape(ctx, open ? [[cx - 15, cy - 38], [cx - 15 - 16 * open, cy - 34], [cx - 15 - 16 * open, cy - 2], [cx - 15, cy + 2]] : rectP(cx - 12, cy - 35, 24, 34), { fill: C.pink, h: { base: .7, gap: 3 }, w: 1.6, passes: 1 });
+    if (!open) { shape(ctx, rectP(cx - 6, cy - 22, 12, 10), { fill: C.gold, h: { base: .9, gap: 2 }, w: 1.4, passes: 1 }); line(ctx, [[cx - 4, cy - 22], [cx - 4, cy - 28], [cx + 4, cy - 28], [cx + 4, cy - 22]], { w: 1.4, passes: 1, amp: .2 }); }
+    line(ctx, [[cx - 8, cy - 38], [cx + 8, cy - 38]], { w: 2, passes: 1, color: C.thread }); }
+  // z3: clapper board
+  { const x = z.z3.x + 2, y = z.z3.by + 38; const snap = step && (step.name === 'Video' || step.name === 'Edit') ? Math.abs(Math.sin(T * 3)) * .5 : .1; seed('clap');
+    shape(ctx, rectP(x - 14, y - 16, 28, 16), { fill: C.ink, h: { base: .9, gap: 2.2 }, w: 1.6, passes: 1 }); dot(ctx, x - 6, y - 8, 1.6, C.white, { stroke: null }); line(ctx, [[x - 2, y - 8], [x + 8, y - 8]], { w: 1.2, passes: 1, amp: .1, color: C.white });
+    const top = rot([[x - 14, y - 16], [x + 14, y - 16], [x + 14, y - 22], [x - 14, y - 22]], x - 14, y - 16, -snap); shape(ctx, top, { fill: C.white, h: { base: .5, gap: 3, layers: [{ color: C.ink, angle: -.8, gap: 5 }] }, w: 1.6, passes: 1 }); }
+  // z4 bars
+  { const bx = z.z4.x - 40, by2 = z.z4.by + 4; const g = step && step.name === 'Post' ? ease(clamp((t - .6) / 1.2)) : step && step.name !== 'Post' ? 0.35 : .35; seed('bars'); [.4, .7, 1].forEach((v, i) => { const h = 20 * v * (.25 + .75 * g); shape(ctx, rectP(bx - 8 + i * 12, by2 - 28 - h, 8, h), { fill: [C.gold, C.rose, C.sage][i], h: { base: .9, gap: 2 }, w: 1.1, passes: 1 }); }); }
+  // z4 mailbox flag
+  { const x = z.z4.x + 30, y = z.z4.by + 8; const up = step && step.name === 'Post' ? ease(clamp((t - .9) / .5)) : 0; seed('flag'); line(ctx, [[x + 11, y - 28], [x + 11, y - 40 - up * 6]], { w: 1.6, passes: 1 }); shape(ctx, [[x + 11, y - 40 - up * 6], [x + 22, y - 36 - up * 6], [x + 11, y - 32 - up * 6]], { fill: C.rose, h: { base: .9, gap: 2 }, w: 1.1, passes: 1 }); }
+  // z5 coins
+  { const x = z.z5.x + 46, y = z.z5.by + 6; for (let i = 0; i < 3; i++) { seed('coin' + i); const bob = Math.abs(Math.sin(T * 2 + i)) * 3; dot(ctx, x - 8 + i * 8, y - 18 - bob, 3.4, C.gold, { w: 1.2, passes: 1 }); } }
+  // sparkle on active zone
+  if (step) { const zk = step.hot === 'cab' ? 'z2' : step.hot; const zz = z[zk]; if (zz) { ctx.save(); ctx.globalAlpha = .5 + .3 * Math.sin(T * 4); seed('ring'); line(ctx, ell(zz.x, zz.by - 14, 108, 56, 40), { closed: true, w: 1.8, color: C.rose, passes: 1 }); ctx.restore(); for (let i = 0; i < 4; i++) sparkle(ctx, zz.x + Math.cos(i * 1.6 + T) * 90, zz.by - 46 + Math.sin(i * 2.1 + T * 1.3) * 22, 5, T, i); } }
+}
+function drawDynamic(ctx, S) {
+  const { T, t, si, cycle } = S, A = STEPS[si];
+  sky(ctx, T);
+  waterfall(ctx, T);
+  props(ctx, S, T, t, A);
+  // people
+  for (const p of CAST) { const zz = ZONES[p.z]; const hot = A && (A.hot === p.z || (A.hot === 'cab' && p.z === 'z2')); const act = hot && t > .8 ? 1 : 0; person(ctx, { x: zz.x + p.dx, y: zz.by + 10 + (p.y || 0), s: 1.0, shirt: p.shirt, hair: p.hair, t: T, act, f: p.f || 1, id: p.id, bun: p.bun, hat: p.hat }); }
+  // thread (visited edges persist through the cycle), tickets, token
+  const seen = {}; for (let i = 0; i < si; i++) STEPS[i].go.forEach(e => seen[e] = 1);
+  const ep = ease(clamp((t - .15) / .85)), arrived = t > 1.0, lbls = [];
+  for (const id in EDGES) { const now = A.go.includes(id); if (!seen[id] && !now) continue; const prog = seen[id] ? 1 : ep; edgeDraw(ctx, id, prog); const e = EDGES[id], q = pointAt(e._pts, .5); if (now) lbls.push([id, e.label, q, clamp((t - .45) / 1.1) * e.label.length]); if (now && !arrived) { const q2 = pointAt(e._pts, ep); token(ctx, q2[0], q2[1], T); } }
+  const shown = {}; for (let i = 0; i <= si; i++) STEPS[i].tk.forEach(k => shown[k] = (shown[k] ?? 0) + 1);
+  // idle ticket is shown at the start of each cycle, post ticket at the end
+  const cur = A.tk[A.tk.length - 1];
+  const list = ['idle'].concat(Object.keys(shown));
+  [...new Set(list)].forEach(k => { const b = TICKETS[k]; const isCur = k === cur || (k === 'idle' && si === 0 && t < .8) ; let pop = 1, alpha = 1; if (k === cur && t < 1.3) { pop = .6 + .4 * easeOutBack(clamp((t - .85) / .45)); alpha = clamp((t - .8) / .25); } if (k === cur && t < .8) return; ticket(ctx, k, b, { active: k === cur && arrived, at: t, pop, alpha }); });
+  // zone name plates (on top of the thread so they stay readable)
+  for (const k of ['z1', 'z2', 'z3', 'z4', 'z5', 'z6']) { const zz = ZONES[k], hot = A && (A.hot === k || (A.hot === 'cab' && k === 'z2')); ctx.save(); ctx.font = `700 15px ${FONT_T}`; const nm = zz.name, w = Math.max(96, ctx.measureText(nm).width + 28); ctx.restore(); const _unused = 0, y = zz.by + 34, h = hot ? 40 : 24; seed('pl' + k); const pts = rectP(zz.x - w / 2, y - 17, w, h);
+    hatch(ctx, tr(pts, 3, 3), { color: C.ink, base: .1, gap: 3, w: 1.2, angle: -.8, alpha: .6 }); hatch(ctx, pts, { color: C.ticket, solid: C.ticket, base: .4, gap: 4.5, w: 1.4, layers: [{ color: C.beige, alpha: .4 }] }); line(ctx, pts, { closed: true, w: 1.8, passes: 1 });
+    txt(ctx, nm, zz.x, y, { font: `700 15px ${FONT_T}`, align: 'center' }); if (hot) label(ctx, zz.roles.split(' · ').slice(0, 3).join(' · '), zz.x, y + 15, { size: 11.5, align: 'center' }); }
+  // thread labels on top of tickets/plates, with a paper backing
+  for (const [id, text, q, chars] of lbls) { if (chars <= 0) continue; ctx.save(); ctx.font = `italic 14px ${FONT_T}`; const w = ctx.measureText(text).width; ctx.restore(); ctx.save(); ctx.globalAlpha = .88; ctx.fillStyle = C.ticket; ctx.beginPath(); ctx.roundRect(q[0] + 4, q[1] - 26, w + 8, 20, 4); ctx.fill(); ctx.restore(); seed('lb' + id); label(ctx, text, q[0] + 8, q[1] - 11, { size: 14, chars }); }
+  // approval stamp
+  if (A.gate && t > 1.1) { const f = easeOutBack(clamp((t - 1.1) / .5)); ctx.save(); ctx.translate(672, 520); ctx.rotate(-.18); ctx.scale(f, f); seed('stamp'); line(ctx, ell(0, 0, 30, 30, 28), { closed: true, w: 3, color: C.thread }); line(ctx, ell(0, 0, 25, 25, 28), { closed: true, w: 1.4, color: C.thread, passes: 1 }); txt(ctx, 'อนุมัติ', 0, 6, { font: `700 18px ${FONT_T}`, align: 'center', color: C.thread }); ctx.restore(); }
+  // posted counter plate
+  const posted = S.live ? S.posted : Math.min(2, cycle + (A.post && arrived ? 1 : 0));
+  seed('cnt'); shape(ctx, rectP(826, 868, 150, 54), { fill: C.face, h: { base: .3, gap: 5, solid: C.white }, w: 1.8 });
+  txt(ctx, `โพสต์แล้ว ${posted} ชิ้น`, 901, 892, { font: `700 17px ${FONT_T}`, align: 'center' });
+  label(ctx, A.post && cycle >= 2 ? '(โมเดล W6 จำกัด 2 ครั้ง)' : 'ในโมเดล W6 ไม่เกิน 2', 901, 912, { size: 11.5, align: 'center' });
+}
+
+
+</script>
+<script>
+/* ===== dashboard: live jobs from Notion, approval gate, island sync ===== */
+(function () {
+  const DS = 'collection://ebc4f6b4-2799-4a65-b323-83f743a9b18f', SRV = 'Notion', TOOL_Q = 'notion-query-data-sources', TOOL_U = 'notion-update-page';
+  const QUERY = { data: { mode: 'rows', data_source_url: DS, limit: 50 } };
+  const STATUS_STEP = { 'คิวรอ': -1, 'ค้นเทรนด์': 0, 'คิดคอนเทนต์': 1, 'เขียนสคริป': 2, 'รอคุณอนุมัติ': 3, 'อนุมัติแล้ว': 4, 'ทำเสียง/วิดีโอ': 5, 'ตัดต่อรีล': 6, 'พร้อมโพสต์ (ร่าง)': 7, 'โพสต์แล้ว': 7 };
+  const STEP_LABEL = ['ค้นเทรนด์', 'คิดไอเดีย', 'เขียนสคริป', 'ยื่นตู้', 'อนุมัติ', 'เสียง/วิดีโอ', 'ตัดต่อ', 'ปล่อย'];
+  const STATUS_TEAM = { 'ค้นเทรนด์': 'หาและคิด', 'คิดคอนเทนต์': 'หาและคิด', 'เขียนสคริป': 'เขียนและอนุมัติ', 'รอคุณอนุมัติ': 'เขียนและอนุมัติ', 'อนุมัติแล้ว': 'ผลิต', 'ทำเสียง/วิดีโอ': 'ผลิต', 'ตัดต่อรีล': 'ผลิต', 'พร้อมโพสต์ (ร่าง)': 'ปล่อยและเรียนรู้', 'โพสต์แล้ว': 'ปล่อยและเรียนรู้' };
+  const TEAMS = [
+    { n: 'หาและคิด', c: [['Notion', 'ใช้แล้ว'], ['Apify', 'ใช้แล้ว']] },
+    { n: 'เขียนและอนุมัติ', c: [['Notion', 'ใช้แล้ว'], ['Google Docs/Drive', 'ยังไม่ใช้ (สคริปต์อยู่ใน Notion)']] },
+    { n: 'ผลิต', c: [['ElevenLabs เสียง', 'รอคุณอนุมัติก่อน (ใช้เครดิต)']] },
+    { n: 'ปล่อยและเรียนรู้', c: [['Google Calendar', 'ร่างนัดในกระดานเท่านั้น']] },
+    { n: 'รายได้', c: [['—', 'ยังไม่ตั้งค่าตัวต่อ']] },
+    { n: 'หลังบ้าน', c: [['—', 'ยังไม่ตั้งค่าตัวต่อ']] },
+  ];
+  const $ = id => document.getElementById(id);
+  function h(tag, props, ...kids) { const e = document.createElement(tag); for (const k in props || {}) { const v = props[k]; if (k === 'class') e.className = v; else if (k === 'on') { for (const ev in v) e.addEventListener(ev, v[ev]); } else if (v !== false && v != null) e.setAttribute(k, v === true ? '' : v); } for (const c of kids.flat()) { if (c == null || c === false) continue; e.append(c.nodeType ? c : document.createTextNode(String(c))); } return e; }
+  const keyOf = url => (String(url).match(/[0-9a-f]{32}/i) || [String(url).replace(/\W+/g, '').slice(-32)])[0];
+  function toJob(r) { let conn = []; try { conn = JSON.parse(r['ตัวต่อที่ใช้'] || '[]'); } catch (e) { } return { id: keyOf(r.url), url: r.url, title: r['งาน'] || '(ไม่มีชื่อ)', status: r['สถานะ'] || 'คิวรอ', team: r['ทีม'] || '', progress: Number(r['ความคืบหน้า'] || 0), approved: r['คุณอนุมัติแล้ว'] === '__YES__', conn, note: r['โน้ตทีม'] || '', role: r['ผู้รับผิดชอบ (บทบาท)'] || '', edited: r['แก้ไขล่าสุด'] || '', link: r['ลิงก์ผลงาน'] || '', due: r['date:นัดโพสต์:start'] || '' }; }
+  const rowsOf = res => { const p = res && res.payload; const a = p && Array.isArray(p.results) ? p.results : []; return a.map(toJob); };
+
+  const S = { jobs: [], sel: null, mode: 'live', mcp: null, db: null, user: null, owner: false, uid: null, busy: false, confirm: null, msg: null, err: null, storedAt: null, liveStart: 0, demo: { cur: 0, cycle: 0, playing: true, speed: 1, start: 0 }, px: 0 };
+  const selJob = () => S.jobs.find(j => j.id === S.sel) || null;
+  const stepOf = j => (j && STATUS_STEP[j.status] != null) ? STATUS_STEP[j.status] : null;
+
+  /* ---------- rendering ---------- */
+  function errText(e) {
+    const c = e && e.code;
+    if (c === 'needs_reauth' || c === 'server_not_connected' || c === 'server_not_found') return 'ต่อ Notion ไม่ได้: เชื่อมต่อ Notion ใหม่ที่ claude.ai → Settings → Connectors แล้วโหลดหน้านี้อีกครั้ง';
+    if (c === 'approval_required' || c === 'not_in_manifest' || c === 'consent_required') return 'หน้านี้ยังไม่ได้รับอนุญาตให้ใช้ Notion ของคุณ กด "อนุญาต Notion" แล้วเลือกอนุญาต';
+    if (c === 'blocked_by_policy') return 'องค์กรของคุณบล็อกการเรียก Notion จากหน้านี้';
+    if (c === 'selection_required') return 'มีตัวต่อ Notion มากกว่าหนึ่งตัว เลือกตัวที่ใช้ในหน้าต่างที่ claude.ai แสดง';
+    if (c === 'tool_error') return 'Notion ตอบกลับว่าทำไม่สำเร็จ: ' + String(e.message || '').slice(0, 160);
+    if (c === 'server_unavailable' || c === 'upstream_error') return 'Notion ไม่ตอบสนองชั่วคราว ลองกด "โหลดใหม่" อีกครั้ง';
+    return 'เกิดข้อผิดพลาด (' + (c || 'ไม่ทราบ') + ')';
+  }
+  function renderErr() {
+    const b = $('errBox'); b.replaceChildren(); if (!S.err) { b.hidden = true; return; } b.hidden = false;
+    const needs = ['approval_required', 'not_in_manifest', 'consent_required'].includes(S.err.code);
+    b.append(h('div', { class: 'banner', role: 'alert' }, errText(S.err), ' ', needs ? h('button', { on: { click: askPerm } }, 'อนุญาต Notion') : h('button', { on: { click: () => startWatch(true) } }, 'โหลดใหม่')));
+  }
+  function stepper(j) { const a = stepOf(j), all = j.status === 'โพสต์แล้ว'; return h('div', { class: 'steps', 'aria-label': 'ขั้นของงาน' }, STEP_LABEL.map((l, i) => h('span', { class: (all || (a != null && i < a) ? 'done' : (a === i ? 'cur' : '')) + (i === 4 ? ' gate' : '') }, l))); }
+  function chipFor(st) { const c = st === 'โพสต์แล้ว' ? 'ok' : st === 'รอคุณอนุมัติ' ? 'gate' : st === 'ติดปัญหา' ? 'bad' : 'info'; return h('span', { class: 'chip ' + c }, st); }
+  function jobCard(j) {
+    const pct = Math.round(clamp(j.progress, 0, 1) * 100);
+    return h('article', { class: 'card' + (j.id === S.sel ? ' sel' : ''), 'data-job': j.id },
+      h('div', { class: 'row' }, chipFor(j.status), j.team && h('span', { class: 'chip' }, j.team), j.approved ? h('span', { class: 'chip ok' }, 'คุณอนุมัติแล้ว') : h('span', { class: 'chip' }, 'ยังไม่อนุมัติ')),
+      h('h3', null, j.title),
+      h('div', { class: 'meter', role: 'progressbar', 'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-valuenow': pct, 'aria-label': 'ความคืบหน้า' }, h('i', { style: 'width:' + pct + '%' })),
+      h('div', { class: 'pct' }, h('span', null, j.role || ''), h('span', null, pct + '%')),
+      stepper(j),
+      j.conn.length ? h('div', { class: 'row', style: 'margin-top:8px' }, j.conn.map(c => h('span', { class: 'chip' }, c))) : null,
+      j.note ? h('p', { class: 'sub', style: 'margin:8px 0 0' }, j.note) : null,
+      h('div', { class: 'row', style: 'margin-top:8px' },
+        h('button', { on: { click: () => { S.sel = j.id; S.mode = 'live'; S.liveStart = performance.now() / 1000; renderAll(); } } }, 'ดูบนเกาะ'),
+        h('a', { class: 'btn', href: j.url, target: '_blank', rel: 'noopener' }, 'เปิดใน Notion'),
+        j.link && h('a', { class: 'btn', href: j.link, target: '_blank', rel: 'noopener' }, 'ผลงาน')));
+  }
+  function renderJobs() { const el = $('jobs'); el.replaceChildren(); if (!S.jobs.length) { el.append(h('div', { class: 'card muted' }, S.err ? 'ยังโหลดงานไม่ได้' : 'ยังไม่มีงานในกระดาน ให้บอก Claude ว่าจะเริ่มงานอะไร')); return; } S.jobs.forEach(j => el.append(jobCard(j))); }
+  function renderTeams() {
+    const hot = new Set(S.jobs.map(j => STATUS_TEAM[j.status]).filter(Boolean)); const el = $('teams'); el.replaceChildren();
+    TEAMS.forEach(t => el.append(h('div', { class: 'team' + (hot.has(t.n) ? ' hot' : '') }, h('b', null, t.n, hot.has(t.n) ? ' · มีงานอยู่' : ''), t.c.map(([n, s]) => h('div', { class: 'sub' }, n, ' — ', s)))));
+  }
+  function renderGate() {
+    const el = $('gate'); el.replaceChildren(); const waiting = S.jobs.filter(j => j.status === 'รอคุณอนุมัติ' && !j.approved); if (!waiting.length) { el.hidden = true; return; } el.hidden = false;
+    waiting.forEach(j => {
+      const box = h('div', { class: 'gatebox' }, h('h2', null, 'ด่านที่ 1: รอคุณอนุมัติ'), h('div', null, h('b', null, j.title)),
+        h('p', { class: 'sub' }, 'อ่านสคริปต์ใน Notion ก่อน แล้วค่อยตัดสินใจ หลังอนุมัติ ทีมผลิตถึงจะเริ่มทำเสียงได้ (ใช้เครดิต ElevenLabs ของคุณ) ยังไม่มีอะไรถูกส่งออกหรือโพสต์'),
+        h('div', { class: 'row' }, h('a', { class: 'btn', href: j.url, target: '_blank', rel: 'noopener' }, 'อ่านสคริปต์ใน Notion')));
+      if (!S.owner) { box.append(h('p', { class: 'msg' }, 'เฉพาะเจ้าของหน้านี้กดอนุมัติได้')); }
+      else if (!S.mcp) { box.append(h('p', { class: 'msg err' }, 'เปิดหน้านี้ใน claude.ai เพื่อกดอนุมัติ (ต้องใช้ตัวต่อ Notion)')); }
+      else if (S.confirm && S.confirm.id === j.id) {
+        const isA = S.confirm.kind === 'approve'; const ta = isA ? null : h('textarea', { id: 'why', 'aria-label': 'ต้องการให้แก้อะไร', placeholder: 'ต้องการให้แก้อะไร (จำเป็น)' });
+        box.append(h('p', null, isA ? 'ยืนยัน: อนุมัติสคริปต์นี้ใช่ไหม' : 'ส่งกลับให้นักเขียนแก้'), ta,
+          h('div', { class: 'row' },
+            h('button', { class: isA ? 'go' : 'warn', disabled: S.busy, on: { click: () => decide(j, S.confirm.kind, ta ? ta.value.trim() : '') } }, S.busy ? 'กำลังบันทึก…' : isA ? 'ยืนยันอนุมัติ' : 'ส่งกลับให้แก้'),
+            h('button', { disabled: S.busy, on: { click: () => { S.confirm = null; renderGate(); } } }, 'ยกเลิก')));
+      } else {
+        box.append(h('div', { class: 'row' }, h('button', { class: 'go', on: { click: () => { S.confirm = { id: j.id, kind: 'approve' }; S.msg = null; renderGate(); } } }, 'อนุมัติสคริปต์'), h('button', { class: 'warn', on: { click: () => { S.confirm = { id: j.id, kind: 'revise' }; S.msg = null; renderGate(); } } }, 'ขอแก้ไข')));
+      }
+      if (S.msg) box.append(h('p', { class: 'msg ' + S.msg.k, role: 'status' }, S.msg.t));
+      el.append(box);
+    });
+  }
+  function renderNote() {
+    const j = selJob(); const n = $('note'); const a = stepOf(j);
+    if (S.mode === 'demo') n.textContent = 'โหมดสาธิต: ' + (STEPS[S.demo.cur].name) + ' — ' + STEPS[S.demo.cur].note;
+    else if (j) n.textContent = 'งานที่แสดงบนเกาะ: ' + j.title + ' · ' + j.status + (a === 3 ? ' (ตู้อนุมัติเรืองแสง รอคุณ)' : '');
+    else n.textContent = 'ยังไม่มีงานจริงให้แสดง จึงเล่นโหมดสาธิต';
+  }
+  function renderAll() { renderErr(); renderGate(); renderJobs(); renderTeams(); renderNote(); $('mLive').className = S.mode === 'live' ? 'on' : ''; $('mDemo').className = S.mode === 'demo' ? 'on' : ''; $('mLive').setAttribute('aria-pressed', S.mode === 'live'); $('mDemo').setAttribute('aria-pressed', S.mode === 'demo'); $('demoCtl').hidden = S.mode !== 'demo'; }
+  function renderFresh() { $('fresh').textContent = S.storedAt ? 'อัปเดตจาก Notion ' + new Date(S.storedAt).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : (S.err ? 'ยังโหลดจาก Notion ไม่ได้' : 'กำลังโหลดงานจาก Notion…'); }
+
+  /* ---------- data: watch Notion ---------- */
+  let unwatch = null;
+  function onRows(ev) {
+    if (ev.type === 'error') { S.err = ev.error; renderErr(); renderFresh(); return; }
+    S.err = null; const jobs = rowsOf(ev.result); S.jobs = jobs; S.storedAt = (ev.result.cache && ev.result.cache.storedAt) || Date.now();
+    if (!S.sel || !jobs.some(j => j.id === S.sel)) { S.sel = jobs.length ? jobs[0].id : null; S.liveStart = performance.now() / 1000; }
+    renderFresh(); renderAll();
+  }
+  function startWatch(refresh) { if (!S.mcp) return; try { unwatch && unwatch(); } catch (e) { } S.err = null; if (refresh) { try { S.mcp.invalidate(SRV, TOOL_Q).catch(() => { }); } catch (e) { } } unwatch = S.mcp.watchTool(SRV, TOOL_Q, QUERY, onRows, { refetchInterval: 30000 }); }
+  async function askPerm() { try { const p = await claude.use('permissions'); await p.request(['mcp:' + SRV]); } catch (e) { } startWatch(true); }
+
+  /* ---------- decisions: write Notion as the viewer, log in db ---------- */
+  async function decide(job, kind, reason) {
+    if (S.busy) return; if (kind === 'revise' && !reason) { S.msg = { k: 'err', t: 'ใส่เหตุผลที่ต้องแก้ก่อน' }; renderGate(); return; }
+    S.busy = true; S.msg = null; renderGate();
+    try {
+      const fresh = await S.mcp.callTool(SRV, TOOL_Q, QUERY, { cache: { refresh: true, staleTime: 0, gcTime: 1000 } });
+      const cur = rowsOf(fresh).find(x => x.id === job.id);
+      if (!cur || cur.status !== 'รอคุณอนุมัติ') { S.msg = { k: 'err', t: 'สถานะงานนี้เปลี่ยนไปแล้ว (ตอนนี้: ' + (cur ? cur.status : 'ไม่พบ') + ') จึงไม่ได้บันทึก' }; S.confirm = null; startWatch(true); return; }
+      const props = kind === 'approve'
+        ? { 'คุณอนุมัติแล้ว': '__YES__', 'สถานะ': 'อนุมัติแล้ว', 'ความคืบหน้า': 0.6, 'โน้ตทีม': 'เจ้าของอนุมัติสคริปต์แล้ว (กดจากแดชบอร์ด) ทีมผลิตเริ่มได้ ยังไม่ได้ส่งออก' }
+        : { 'คุณอนุมัติแล้ว': '__NO__', 'สถานะ': 'เขียนสคริป', 'ความคืบหน้า': 0.3, 'โน้ตทีม': 'เจ้าของขอแก้: ' + reason };
+      await S.mcp.callTool(SRV, TOOL_U, { page_id: job.url, command: 'update_properties', properties: props }, { cache: false });
+      S.msg = { k: 'ok', t: kind === 'approve' ? 'บันทึกการอนุมัติลง Notion แล้ว บอก Claude ในแชตว่า "อนุมัติแล้ว" เพื่อให้ทีมผลิตเริ่มทำเสียง' : 'ส่งกลับให้นักเขียนแก้แล้ว' };
+      S.confirm = null;
+      if (S.db) { try { await S.db.doc('approvals/' + job.id + '-' + Date.now()).set({ job: job.title, jobId: job.id, decision: kind, reason: reason || '', by: S.uid || null, at: Date.now() }); } catch (e) { S.msg.t += ' (บันทึกประวัติในหน้านี้ไม่สำเร็จ แต่ Notion อัปเดตแล้ว)'; } }
+      startWatch(true);
+    } catch (e) {
+      const amb = e && (e.code === 'server_unavailable' || e.code === 'upstream_error');
+      S.msg = { k: 'err', t: errText(e) + (amb ? ' อาจบันทึกไปแล้ว ตรวจใน Notion ก่อนกดซ้ำ' : '') };
+      if (e && ['approval_required', 'not_in_manifest', 'consent_required'].includes(e.code)) S.err = e;
+    } finally { S.busy = false; renderErr(); renderGate(); }
+  }
+  function startLog() {
+    if (!S.db) return; let timer = setTimeout(() => { const l = $('log'); if (l.firstChild && l.firstChild.className === 'muted') l.firstChild.textContent = 'ยังโหลดประวัติไม่ได้'; }, 10000);
+    S.db.collection('approvals').orderBy('at', 'desc').limit(20).onSnapshot(snap => {
+      clearTimeout(timer); const l = $('log'); l.replaceChildren(); if (snap.empty) { l.append(h('li', { class: 'muted' }, 'ยังไม่มีการตัดสินใจ')); return; }
+      snap.docs.forEach(d => { const x = d.data() || {}; l.append(h('li', null, new Date(x.at || 0).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' }), ' · ', x.decision === 'approve' ? 'อนุมัติ' : 'ขอแก้', ' · ', String(x.job || ''), x.reason ? ' — ' + String(x.reason) : '')); });
+    }, () => { clearTimeout(timer); }); }
+
+  /* ---------- island player ---------- */
+  const cv = $('cv'), g = cv.getContext('2d'); const cache = new Map();
+  function layer(b) { const key = b + ':' + S.px; if (cache.has(key)) return cache.get(key); const c = document.createElement('canvas'); c.width = c.height = S.px; const cg = c.getContext('2d'); cg.scale(S.px / 1000, S.px / 1000); BOIL = b; buildStatic(cg); cache.set(key, c); while (cache.size > 6) cache.delete(cache.keys().next().value); return c; }
+  function draw(T, t, si, cyc, live) { const b = Math.floor(T * 5) % 3; BOIL = b; g.setTransform(1, 0, 0, 1, 0, 0); g.drawImage(layer(b), 0, 0); const k = S.px / 1000; g.setTransform(k, 0, 0, k, 0, 0); BOIL = b; drawDynamic(g, { T, t, si, cycle: cyc, live: !!live, posted: S.jobs.filter(j => j.status === 'โพสต์แล้ว').length }); }
+  const STEP_DUR = 3.8, SPEEDS = [1, 1.5, 2, 3];
+  function frame(now) {
+    const T = now / 1000; const j = selJob(); const a = stepOf(j);
+    if (S.mode === 'live' && j && a != null) { draw(T, Math.min(T - S.liveStart, 3.2), Math.max(0, a), 0, true); }
+    else { const d = S.demo; let t = (T - d.start) * d.speed; if (d.playing && t > STEP_DUR) { demoGo(d.cur + 1); t = 0; } draw(T, t, d.cur, d.cycle, false); }
+    requestAnimationFrame(frame);
+  }
+  function demoGo(i) { const d = S.demo; if (i >= STEPS.length) { i = 0; d.cycle = (d.cycle + 1) % 3; } if (i < 0) i = STEPS.length - 1; d.cur = i; d.start = performance.now() / 1000; renderNote(); }
+  function resize() { const w = $('cv').parentElement.clientWidth || 600, dpr = Math.min(2, window.devicePixelRatio || 1); const px = Math.max(320, Math.round(w * dpr)); if (px !== S.px) { S.px = px; cv.width = cv.height = px; } }
+  addEventListener('resize', resize);
+  $('mLive').onclick = () => { S.mode = 'live'; S.liveStart = performance.now() / 1000; renderAll(); };
+  $('mDemo').onclick = () => { S.mode = 'demo'; S.demo.start = performance.now() / 1000; renderAll(); };
+  $('next').onclick = () => demoGo(S.demo.cur + 1); $('prev').onclick = () => demoGo(S.demo.cur - 1);
+  $('play').onclick = () => { S.demo.playing = !S.demo.playing; S.demo.start = performance.now() / 1000; $('play').textContent = S.demo.playing ? '❚❚' : '▶'; };
+  $('speed').onclick = () => { const d = S.demo, now = performance.now() / 1000, el = (now - d.start) * d.speed; d.speed = SPEEDS[(SPEEDS.indexOf(d.speed) + 1) % SPEEDS.length]; d.start = now - el / d.speed; $('speed').textContent = '⚡ ' + d.speed + '×'; };
+
+  /* ---------- boot ---------- */
+  async function boot() {
+    const use = (window.claude && window.claude.use) ? window.claude.use.bind(window.claude) : async () => null;
+    const [mcp, db, user] = await Promise.all([use('mcp').catch(() => null), use('db').catch(() => null), use('user').catch(() => null)]);
+    S.mcp = mcp; S.db = db; S.user = user;
+    try { S.owner = user ? !!(await user.isOwner()) : false; S.uid = user && user.id ? await user.id() : null; } catch (e) { }
+    if (!mcp) { S.mode = 'demo'; S.demo.start = performance.now() / 1000; $('fresh').textContent = 'เปิดใน claude.ai เพื่อดูงานจริงจาก Notion'; }
+    renderAll(); startWatch(false); startLog();
+  }
+  const go = () => { resize(); S.demo.start = performance.now() / 1000; S.liveStart = S.demo.start; renderAll(); requestAnimationFrame(frame); boot(); };
+  (document.fonts && document.fonts.load) ? Promise.all([document.fonts.load('700 20px Sarabun'), document.fonts.load('400 20px Sarabun'), document.fonts.load('italic 20px Sarabun')]).then(go, go) : go();
+  window.__office = { S };
+})();
+
+</script>
