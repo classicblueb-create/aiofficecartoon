@@ -26,8 +26,6 @@
  <span id="count"></span>
  <div id="note"></div>
 </div>
-<p id="credit">ภาพหุ่นจำลองของ modty.ai · ก้าวทั้ง 8 มาจากโมเดล W6.tla (ผล TLC ตามบันทึกใน models/README.md ยังไม่ได้รันซ้ำ และหน้านี้ไม่ได้ตรวจกฎเอง) ·
-เอนจินลายเส้นเครยอง/ตัวเล่นทีละก้าวดัดแปลงจากตัวอย่าง "the making of nhang" ที่ผู้ใช้ส่งมา · สไตล์อ้างอิง statechart-art (Kevin T. Ngo, MIT) และ Field Notes (April Zhu) · ฟอนต์ Sarabun (OFL)</p>
 <script>
 /* ===== crayon engine (seeded, jittered, hatched) ===== */
 const TAU = Math.PI * 2, PI = Math.PI;
@@ -254,7 +252,7 @@ const CAST = [
   { z: 'z6', dx: -56, shirt: C.lilac, hair: C.ink, id: 'prod' }, { z: 'z6', dx: 56, shirt: C.mint, hair: C.ink, id: 'qa', f: -1 },
   { z: 'owner', dx: 0, shirt: C.rose, hair: C.ink, id: 'owner', y: -2, bun: true },
 ];
-// ก้าวทั้ง 8 ตาม models/W6.tla  (คำไทยเดียวกับ view.mjs)
+// ก้าวทั้ง 8 ของวงจรงาน (คำไทยเดียวกับ view.mjs)
 const TICKETS = {
   idle: { x: 372, y: 552, w: 150, label: 'ว่าง รอรอบใหม่', tag: 'โต๊ะเจ้าของ', pin: C.pinG },
   trend: { x: 205, y: 360, w: 150, label: 'ค้นเทรนด์', tag: 'ห้อง 1', pin: C.pinB },
@@ -455,7 +453,6 @@ function drawDynamic(ctx, S) {
   const posted = Math.min(2, cycle + (A.post && arrived ? 1 : 0));
   seed('cnt'); shape(ctx, rectP(826, 868, 150, 54), { fill: C.face, h: { base: .3, gap: 5, solid: C.white }, w: 1.8 });
   txt(ctx, `โพสต์แล้ว ${posted} ชิ้น`, 901, 892, { font: `700 17px ${FONT_T}`, align: 'center' });
-  label(ctx, A.post && cycle >= 2 ? '(โมเดล W6 จำกัด 2 ครั้ง)' : 'ในโมเดล W6 ไม่เกิน 2', 901, 912, { size: 11.5, align: 'center' });
 }
 
 /* ===== player ===== */
